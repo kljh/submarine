@@ -1,7 +1,7 @@
 console.log('WebSocket chat bot loading modules...')
 const WebSocket = require('ws');
 
-const ws_server = 'ws://localhost:8035/';
+//const ws_server = 'ws://localhost:8035/';
 const ws_server = 'ws://kljh.herokuapp.com/';
 console.log('WebSocket chat bot connecting to '+ws_server+' ...');
 const ws = new WebSocket(ws_server);
