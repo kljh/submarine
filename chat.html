@@ -30,7 +30,7 @@ function ws_init(opt_prms) {
     var prms = opt_prms || {};
     
     console.log("websocket: connection creation @ "+(new Date().toISOString())+" ..");
-    var wss_host = location.origin.replace(/^https?:/, 'ws:');
+    var wss_host = location.origin.replace(/^http/, 'ws');
     ws = new WebSocket(wss_host);
     //ws = new WebSocket("ws://localhost:8085/websocketserver");
     // Two methods : ws.send(msg) end ws.close([code],[reason])
