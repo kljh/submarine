@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- socket.io-client is exposed automatically by the socket.io server as /socket.io/socket.io.js -->
+<script src="/socket.io/socket.io.js"></script>
+<script>
+var socket = io(/* url */);
+
+socket.on('time', function(timeString) {
+  var el = document.getElementById('server-time');
+  el.innerHTML = 'Server time: ' + timeString;
+});
+
+</script>
+</head>
+
+<body>
+Hello pubsub..
+
+<div id="server-time"></div>
+
+</body>
+</html>

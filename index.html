@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<script>
+    var wss_host = location.origin.replace(/^http/, 'ws');
+    var ws = new WebSocket(wss_host);
+
+    ws.addEventListener('open', function (ev) {
+        console.log("websocket: connection open", ev);
+        ws.send(JSON.stringify({ type: "greeting_msg", txt: "Greeting from Websocket client..." }));
+        alert("connected");
+    });
+    ws.addEventListener('close', function (ev) {
+        console.log("websocket: connection close", ev);
+    });
+    ws.addEventListener('error', function (ev) {
+        console.log("websocket: connection error", ev);
+    });
+    ws.addEventListener('message', function (ev) {
+        console.log("websocket: message from server", ev);
+        console.log(ev.data);
+    });
+</script>
+</head>
+
+<body>
+Hello pubsub..
+</body>
+</html>
