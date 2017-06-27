@@ -3,14 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!--
+<script src="jquery.js"></script>
+<script src="moment.min.js"></script>
+<link href="fonts.css" rel="stylesheet" media="screen">
+<link href="devices.min.css" rel="stylesheet" media="screen">
+<link href="material-design-iconic-font.min.css" rel="stylesheet" media="screen">
+-->
+
 <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.13.0/moment.min.js"></script>
-<script src="chat.js"></script>
-<link href="chat.css" rel="stylesheet" media="screen">
 <link href="https://fonts.googleapis.com/css?family=Roboto:400,700,300" rel="stylesheet" media="screen">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/material-design-iconic-font/2.1.2/css/material-design-iconic-font.min.css" rel="stylesheet" media="screen">
 <link href="https://rawgit.com/marvelapp/devices.css/master/assets/devices.min.css" rel="stylesheet" media="screen">
 
+<script src="chat.js"></script>
+<link href="chat.css" rel="stylesheet" media="screen">
 
 <script>
 var ws;
@@ -21,7 +30,9 @@ function ws_init(opt_prms) {
     var prms = opt_prms || {};
     
     console.log("websocket: connection creation @ "+(new Date().toISOString())+" ..");
-    ws = new WebSocket("ws://localhost:8035/websocketserver");
+    var wss_host = location.origin.replace(/^https?:/, 'ws:');
+    ws = new WebSocket(wss_host);
+    
     // Two methods : ws.send(msg) end ws.close([code],[reason])
 
     ws.addEventListener('open', function (ev) {
@@ -57,15 +68,16 @@ function ws_init(opt_prms) {
     });
 }
 </script>
+</head>
 
 <body>
 <div class="page">
-  <div class="marvel-device nexus5">
+  <div class="marvel-device nexus5" style="height: 480px; width:360px;">
     <div class="top-bar"></div>
     <div class="sleep"></div>
     <div class="volume"></div>
     <div class="camera"></div>
-    <div class="screen">
+    <div class="screen" style="height: 100%;">
       <div class="screen-container">
         
         <div class="status-bar">
@@ -150,5 +162,4 @@ function ws_init(opt_prms) {
 
 </body>
 
-</head>
 </html>

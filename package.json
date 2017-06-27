@@ -1,10 +1,14 @@
 {
   "name": "vision",
   "description": "misc node projects",
-  "version": "0.0",
+  "email": "code@main2.fr",
+  "version": "0.0.0",
   "dependencies": {
     "express": "^4.15.3",
     "sqlite3": "^3.1.8",
     "ws": "^3.0.0"
+  },
+  "scripts": {
+    "start": "node wss.js"
   }
 }

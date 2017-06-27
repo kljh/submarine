@@ -1,16 +1,52 @@
 // https://github.com/websockets/ws
 
-console.log('WebSocket server loading modules...')
+console.log('Loading modules...')
 const http = require('http');
 const url = require('url');
-const express = require('express');
 const WebSocket = require('ws');
+const express = require('express');
+const sqlite3 = require('sqlite3').verbose();
 //const ffi = require('ffi');
 
+var db = new sqlite3.Database('queues.sqlite');
+db.serialize(function() {
+  db.run("CREATE TABLE IF NOT EXISTS lorem (info TEXT)");
+  var stmt = db.prepare("INSERT INTO lorem VALUES (?)");
+  for (var i = 0; i < 10; i++) {
+      stmt.run("Ipsum " + i);
+  }
+  stmt.finalize();
+
+  db.each("SELECT rowid AS id, info FROM lorem", function(err, row) {
+      console.log(row.id + ": " + row.info);
+  });
+});
+
+db.close();
+var app = express();
+
+const http_port = 8085;
 const wss_port = 8035;
+
 console.log('WebSocket server starting ...');
 const wss = new WebSocket.Server({ port: wss_port });
 console.log('WebSocket server started on port: %s', wss_port);
+
+
+console.log('HTTP server starting ...');
+app.listen(http_port, function () {
+console.log('HTTP server started on port: %s', http_port);
+});
+
+// static files 
+app.use(express.static('.')) // current folder
+app.use('/static', express.static(__dirname + '/static'));
+
+app.get('/', function (req, res) {
+  res.send('Hello World!');
+});
+
+
 
 wss.on('connection', function connection(ws, req) {
     const remote_host = req.connection.remoteAddress;
