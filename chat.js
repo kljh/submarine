@@ -115,6 +115,10 @@ ws_init({
 			newBotMessage("connected with server.")
 			ws.send(JSON.stringify({ type: "subscribe", topic: topic, id: id }));
 		},
+		onreopen: function(ev) {
+			newBotMessage("reconnected with server.")
+			ws.send(JSON.stringify({ type: "subscribe", topic: topic, id: id }));
+		},
 		onclose: function(ev) {
 			newBotMessage("connection lost !")
 		},

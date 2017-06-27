@@ -3,11 +3,16 @@
 console.log('Loading modules...')
 const http = require('http');
 const url = require('url');
-const WebSocket = require('ws');
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
+const WebSocket = require('ws');
+const io = require('socket.io')
+//const sqlite3 = require('sqlite3').verbose();
 //const ffi = require('ffi');
 
+const http_port = process.env['PORT'] || 8085;
+const wss_port = http_port;
+
+/*
 var db = new sqlite3.Database('queues.sqlite');
 db.serialize(function() {
   db.run("CREATE TABLE IF NOT EXISTS lorem (info TEXT)");
@@ -23,43 +28,36 @@ db.serialize(function() {
 });
 
 db.close();
-var app = express();
-
-const http_port = 8085;
-const wss_port = 8035;
-
-console.log('WebSocket server starting ...');
-const wss = new WebSocket.Server({ port: wss_port });
-console.log('WebSocket server started on port: %s', wss_port);
+*/
 
 
 console.log('HTTP server starting ...');
-app.listen(http_port, function () {
-console.log('HTTP server started on port: %s', http_port);
-});
+var app = express();
+var server = http.createServer(app);
+server.listen(http_port, function () { console.log('HTTP server started on port: %s', http_port); });
 
 // static files 
-app.use(express.static('.')) // current folder
-app.use('/static', express.static(__dirname + '/static'));
-
+const static_file_path = __dirname;
+const static_file_base_url = '/static';
+console.log('HTTP server exposes static files from '+static_file_path+' under '+static_file_base_url+' ...');
+app.use(static_file_base_url, express.static(static_file_path)); // script folder
+// dynamic request
 app.get('/', function (req, res) {
-  res.send('Hello World!');
+    res.send('Hello Transiberian!');
 });
 
 
+console.log('WebSocket server starting ...');
+const wss = new WebSocket.Server({ server: server });
+wss.on('connection', wss_on_connection);
 
-wss.on('connection', function connection(ws, req) {
+function wss_on_connection(ws, req) {
     const remote_host = req.connection.remoteAddress;
     const remote_port = req.connection.remotePort;
     const location = url.parse(req.url, true);
     console.log('connection from client: %s %s', remote_host, remote_port);
     
-    //disp_obj("ws", ws);
-    //disp_obj("req", req);
-    //disp_obj("req.socket", req.socket);
-    //disp_obj("req.connection", req.connection);
-    //disp_obj("req.client", req.client);
-    //console.log(JSON.stringify(location));
+    ws.send(JSON.stringify({ type: "greeting_msg", txt: "Greeting from Websocket server..." })); 
     
     ws.on('message', function incoming(message) {
         console.log('msg from client: %s', message);
@@ -81,16 +79,16 @@ wss.on('connection', function connection(ws, req) {
                 }
                 break;
             case "subscribe":
-                add_topic_subscriber(msg.topic, ws, req, msg);
+                add_topic_subscriber(msg.topic, ws, msg);
                 break;
         }
     });
 
     ws.on('close', function(ev) {
         console.log('connection lost: %s %s', remote_host, remote_port);
-        remove_ws(ws, req);
+        remove_ws(ws);
     });
-});
+}
 
 // Broadcast to all.
 function broadcast(wss, msg, opt_excluded_ws) {
@@ -100,7 +98,6 @@ function broadcast(wss, msg, opt_excluded_ws) {
         }
     });
 };
-
 
 function broadcast_on_topic(topic, msg, opt_excluded_ws) {
     var subscriber_infos = topic_to_subscribers[topic]; 
@@ -116,14 +113,13 @@ function broadcast_on_topic(topic, msg, opt_excluded_ws) {
 // Map: topic name ->  Array of subscriber info (subscriper info, sockets)
 var topic_to_subscribers = {};
 
-function add_topic_subscriber(topic, ws, req, msg) {
+function add_topic_subscriber(topic, ws, msg) {
     
     // gather subscriber info
     var subscriber_info = msg; 
-    subscriber_info.id = subscriber_info.id || (req.connection.remoteAddress+" "+req.connection.remotePort);
+    subscriber_info.id = subscriber_info.id;
     subscriber_info.ws = ws;
-    subscriber_info.req = req;
-    
+
     // add subscriber to topic, create topic if needed
     if (!topic_to_subscribers[topic])
         topic_to_subscribers[topic] = [ subscriber_info ];
@@ -136,12 +132,12 @@ function add_topic_subscriber(topic, ws, req, msg) {
     broadcast_on_topic(topic, notif_msg, ws);
 }
 
-function remove_ws(ws, req) {
+function remove_ws(ws) {
     // remove socket from all subscription lists and notify accordingly
     for (var topic in topic_to_subscribers) 
-        remove_topic_subscriber(topic, ws, req); 
+        remove_topic_subscriber(topic, ws); 
 }
-function remove_topic_subscriber(topic, ws, req) {
+function remove_topic_subscriber(topic, ws) {
     var subscriber_infos = topic_to_subscribers[topic]; 
     
     // remove socket from topic (if present), and delete topic if no more subscribers
