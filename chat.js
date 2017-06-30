@@ -126,9 +126,10 @@ ws_init({
         onjson: function(ev, msg) {
             switch (msg.type) {
                 case "msg_rcv":
-                    newBotMessage(msg.txt, msg.id);
+                    var txt = msg.txt;
                     if (msg.data_url)
-                        document.getElementById("img_rcv").src = msg.data_url;
+                        txt = '<img src="'+msg.data_url+'" style="max-width:250px;"><br/>' + txt;
+                    newBotMessage(txt, msg.id);
                     break;
                 case "subscriber_joined":
                     newBotMessage(msg.id+" just joined.", msg.id);
