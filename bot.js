@@ -35,7 +35,7 @@ function special_offers() {
     var articles = [ "ASPARAGUS", "CHAMELS", "SAUERKRAUT", "SUSPENDERS" ]
     var article  = articles[Math.floor(articles.length*Math.random())];
     var txt = "*** SPECIAL DISCOUNT ON "+article+" TODAY *** ";
-    ws.send(JSON.stringify({ type: "publish", topic: topic, id: id, txt: txt })); 
+    ws.send(JSON.stringify({ type: "publish", topic: topic, id: id, txt: txt }), function(err) {} ); 
     
     setTimeout(special_offers, 30000*(1+5*Math.random()));
 }

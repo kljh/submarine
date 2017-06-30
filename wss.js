@@ -73,7 +73,7 @@ function wss_on_connection(ws, req) {
                     if (!topic_to_subscribers[msg.topic]) {
                         ws.send(JSON.stringify({ type: "warn_msg", topic: msg.topic, txt: "topic does not exist" })); 
                     } else {
-                        var tmp = { type: "msg_rcv", topic: msg.topic, id: msg.id, txt: msg.txt };
+                        var tmp = { type: "msg_rcv", topic: msg.topic, id: msg.id, txt: msg.txt, data_url: msg.data_url };
                         broadcast_on_topic(msg.topic, tmp, msg.loopback?undefined:ws);
                     }
                 }

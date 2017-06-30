@@ -17,6 +17,7 @@
 <link href="https://fonts.googleapis.com/css?family=Roboto:400,700,300" rel="stylesheet" media="screen">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/material-design-iconic-font/2.1.2/css/material-design-iconic-font.min.css" rel="stylesheet" media="screen">
 <link href="https://rawgit.com/marvelapp/devices.css/master/assets/devices.min.css" rel="stylesheet" media="screen">
+<link href="http://anetwork.github.io/tipit/assets/tipit.css" rel="stylesheet" media="screen">
 
 <script src="chat.js"></script>
 <link href="chat.css" rel="stylesheet" media="screen">
@@ -31,8 +32,10 @@ function ws_init(opt_prms) {
     
     console.log("websocket: connection creation @ "+(new Date().toISOString())+" ..");
     var wss_host = location.origin.replace(/^http/, 'ws');
+    if (location.protocol=="file:")
+        wss_host = "ws://localhost:8085/websocketserver";
     ws = new WebSocket(wss_host);
-    //ws = new WebSocket("ws://localhost:8085/websocketserver");
+
     // Two methods : ws.send(msg) end ws.close([code],[reason])
 
     ws.addEventListener('open', function (ev) {
@@ -71,6 +74,7 @@ function ws_init(opt_prms) {
 </head>
 
 <body>
+<img id="img_rcv">
 <div class="page">
   <div class="marvel-device nexus5" style="height: 480px; width:360px;">
     <div class="top-bar"></div>
@@ -82,12 +86,14 @@ function ws_init(opt_prms) {
         
         <div class="status-bar">
           <div class="time"></div>
+          <!--
           <div class="battery">
             <i class="zmdi zmdi-battery"></i>
           </div>
           <div class="network">
             <i class="zmdi zmdi-network"></i>
           </div>
+          -->
           <div class="wifi">
             <i class="zmdi zmdi-wifi-alt-2"></i>
           </div>
@@ -98,29 +104,32 @@ function ws_init(opt_prms) {
         
         <div class="chat">
           <div class="chat-container">
-            <!--
             <div class="user-bar">
+              <!--
               <div class="back">
                 <i class="zmdi zmdi-arrow-left"></i>
               </div>
+              -->
               <div class="avatar">
-                <img src="https://avatars2.githubusercontent.com/u/398893?s=128" alt="Avatar">
+                <img src="https://avatars2.githubusercontent.com/u/994032?s=128" alt="" data-tipit-content="Define your image on gravatar.com." data-tipit-placement="bottom">
               </div>
               <div class="name">
-                <span>Zeno Rocha</span>
-                <span class="status">online</span>
+                <span id="user_id" contentEditable="true">Zeno Rocha</span>
+                <span class="status">connecting...</span>
               </div>
               <div class="actions more">
                 <i class="zmdi zmdi-more-vert"></i>
               </div>
               <div class="actions attachment">
-                <i class="zmdi zmdi-attachment-alt"></i>
+                <i class="zmdi zmdi-attachment-alt" data-tipit-content="Drag and drop to share files." data-tipit-placement="bottom"
+                    ondrop="drop_handler(event);" ondragover="dragover_handler(event);" ondragend="dragend_handler(event);"></i>
               </div>
+              <!--
               <div class="actions">
                 <i class="zmdi zmdi-phone"></i>
               </div>
+              -->
             </div>
-            -->
             <div class="conversation">
               <div class="conversation-container">
               
@@ -144,7 +153,7 @@ function ws_init(opt_prms) {
                 </div>
                 <input class="input-msg" name="input" placeholder="Type a message" autocomplete="off" autofocus></input>
                 <div class="photo">
-                  <i class="zmdi zmdi-camera"></i>
+                  <i class="zmdi zmdi-camera"  data-tipit-content="Drag and drop to share files." data-tipit-placement="top"></i>
                 </div>
                 <button class="send">
                     <div class="circle">
@@ -157,9 +166,10 @@ function ws_init(opt_prms) {
         </div>
       </div>
     </div>
-  </div>
 </div>
+  </div>
 
+<script src="http://anetwork.github.io/tipit/assets/tipit.js"></script>
 </body>
 
 </html>
