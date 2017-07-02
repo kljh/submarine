@@ -74,14 +74,18 @@ function ws_init(opt_prms) {
 </head>
 
 <body>
-<img id="img_rcv">
+
+<!--
 <div class="page">
   <div class="marvel-device nexus5" style="height: 480px; width:360px;">
+-->
+    <!--
     <div class="top-bar"></div>
     <div class="sleep"></div>
     <div class="volume"></div>
     <div class="camera"></div>
-    <div class="screen" style="height: 100%;">
+    -->
+    <div class="screen">
       <div class="screen-container">
         
         <div class="status-bar">
@@ -103,7 +107,8 @@ function ws_init(opt_prms) {
         </div>
         
         <div class="chat">
-          <div class="chat-container">
+          <div class="chat-container"
+                ondrop="drop_handler(event);" ondragover="dragover_handler(event);" ondragend="dragend_handler(event);">
             <div class="user-bar">
               <!--
               <div class="back">
@@ -121,8 +126,10 @@ function ws_init(opt_prms) {
                 <i class="zmdi zmdi-more-vert"></i>
               </div>
               <div class="actions attachment">
-                <i class="zmdi zmdi-attachment-alt" data-tipit-content="Drag and drop to share files." data-tipit-placement="bottom"
-                    ondrop="drop_handler(event);" ondragover="dragover_handler(event);" ondragend="dragend_handler(event);"></i>
+                <i class="zmdi zmdi-attachment-alt" data-tipit-content="Drag and drop to share files." data-tipit-placement="bottom"></i>
+              </div>
+              <div style="position:absolute; top:-100px; /* width: 0px; height: 0px; overflow: hidden; */">
+                <input type="file" name="inputfile" id="inputfile"/>
               </div>
               <!--
               <div class="actions">
@@ -166,8 +173,10 @@ function ws_init(opt_prms) {
         </div>
       </div>
     </div>
-</div>
+<!--
   </div>
+</div>
+-->
 
 <script src="https://anetwork.github.io/tipit/assets/tipit.js"></script>
 </body>

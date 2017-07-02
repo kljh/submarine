@@ -166,6 +166,17 @@ setEditableChangeEvent('#user_id', function(ev) {
     $(".avatar > img").attr("src", "http://gravatar.com/avatar/"+h+"?default=retro");
 });
 
+// paper clip and photo icons can be used for file upload (as well as drag and drop onver the UI)
+$(".attachment").click(function () {
+    $('#inputfile').trigger('click');
+});
+$(".photo").click(function () {
+    $('#inputfile').trigger('click');
+});
+$('#inputfile').change(function(ev) {
+    publish_files(ev.target.files);
+});
+
 });
 
 var id_colors = {};
@@ -205,6 +216,26 @@ function uri_args() {
 }
 
 
+function publish_files(file_list) {
+    console.log("publish #files = " + file_list.length);
+    for (var i=0; i<file_list.length; i++)
+        publish_file(file_list[i]);
+}
+
+function publish_file(f) {
+    console.log("publish file name = " + f.name + " size: " + f.size + " lastModified: " + f.lastModified  );
+
+    var reader = new FileReader();
+    reader.addEventListener("load", function (ev) {
+        var base64_data_url = reader.result;
+        var msg = JSON.stringify({ type: "publish", topic: topic, loopback: false, id: id, txt: f.name, data_url: base64_data_url, lastModified: f.lastModified });
+        ws.send(msg); 
+        console.log(msg.substr(0, 512));
+    }, false);
+    reader.readAsDataURL(f);
+    //reader.readAsText(f);
+}
+
 function drop_handler(ev) {
   console.log("Drop");
   ev.preventDefault();
@@ -215,16 +246,7 @@ function drop_handler(ev) {
     for (var i=0; i < dt.items.length; i++) {
       if (dt.items[i].kind == "file") {
         var f = dt.items[i].getAsFile();
-        console.log("... file[" + i + "].name = " + f.name + " size: " + f.size + " lastModified: " + f.lastModified  );
-        
-        var reader = new FileReader();
-        reader.addEventListener("load", function () {
-            var base64_data_url = reader.result;
-            var msg = JSON.stringify({ type: "publish", topic: topic, loopback: false, id: id, txt: "file upload", data_url: base64_data_url });
-            ws.send(msg); 
-            console.log(msg);
-        }, false);
-        reader.readAsDataURL(f);
+        publish_file(f);
       }
     }
   } else {
