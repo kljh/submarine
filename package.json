@@ -4,9 +4,14 @@
   "email": "code@main2.fr",
   "version": "0.0.0",
   "dependencies": {
+    "body-parser": "^1.17.2",
     "express": "^4.15.3",
-    "sqlite3": "^3.1.8",
+    "express-session": "^1.15.3",
+    "node-sspi": "^0.1.15",
+    "pg": "^6.4.0",
+    "redis": "^2.7.1",
     "socket.io": "^2.0.3",
+    "sqlite3": "^3.1.8",
     "ws": "^3.0.0"
   },
   "scripts": {

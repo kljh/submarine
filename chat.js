@@ -1,5 +1,7 @@
 $(function() {
 
+$.get("/whoami");
+
 var memes = [
     'Dude, you smashed my turtle saying "I\'M MARIO BROS!"',
     'Dude, you grabed seven oranges and yelled "I GOT THE DRAGON BALLS!"',
@@ -104,7 +106,7 @@ function buildMessage(text, opt_prms) {
 function animateMessage(message) {
     setTimeout(function() {
         var tick = message.querySelector('.tick');
-        tick.classList.remove('tick-animation');
+        if (tick) tick.classList.remove('tick-animation');
     }, 500);
 }
 

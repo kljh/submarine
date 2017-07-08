@@ -2,15 +2,36 @@
 
 console.log('Loading modules...')
 const http = require('http');
+const https = require('https');
 const url = require('url');
 const express = require('express');
+const session = require('express-session')
+const bodyParser = require('body-parser');
 const WebSocket = require('ws');
-const io = require('socket.io')
-//const sqlite3 = require('sqlite3').verbose();
+
+const sqlite3 = require('sqlite3').verbose();
+const child_process = require('child_process');
+
+// > redis-server --service-install redis.windows-service.conf
+var redis_client;
+try {
+    redis_client = require('redis').createClient(process.env.REDIS_URL);
+} catch(e) {}
+
+// authenticates incoming requests through native Windows SSPI, hence **runs on Windows only**.
+var sspi_auth;
+try {
+    var sspi = require('node-sspi');
+    sspi_auth = new sspi({ retrieveGroups: false });
+} catch(e) {}
+
 //const ffi = require('ffi');
 
 const http_port = process.env['PORT'] || 8085;
 const wss_port = http_port;
+
+// Control maximum number of concurrent HTTP request 
+//http.globalAgent.maxSockets = 20; // default 5
 
 /*
 var db = new sqlite3.Database('queues.sqlite');
@@ -36,14 +57,42 @@ var app = express();
 var server = http.createServer(app);
 server.listen(http_port, function () { console.log('HTTP server started on port: %s', http_port); });
 
+// Enabling all CORS request (pre-flight, etc.)
+//   - https://github.com/expressjs/cors
+//   app.use(require('cors')());
+// Basic CORS
+app.use(function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    //res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+});
+
 // static files 
 const static_file_path = __dirname;
 const static_file_base_url = '/static';
 console.log('HTTP server exposes static files from '+static_file_path+' under '+static_file_base_url+' ...');
 app.use(static_file_base_url, express.static(static_file_path)); // script folder
+
 // dynamic request
+if (sspi_auth)
+app.use(function (req, res, next) {
+    sspi_auth.authenticate(req, res, function(err){
+        res.finished || next();
+    });
+});
+app.use(session({ secret: "classified sensitive confidence" }));
+app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.json())
+app.get('/whoami', function (req, res) {
+    res.send(JSON.stringify({
+        auth: req.connection.user,
+        host: req.connection.remoteAddress,
+        port: req.connection.remotePort,
+        sspi: sspi_auth !== undefined,
+        }));
+});
 app.get('/', function (req, res) {
-    res.send('Hello Transiberian!');
+    res.send('Hello '+req.connection.user);
 });
 
 
@@ -52,12 +101,13 @@ const wss = new WebSocket.Server({ server: server });
 wss.on('connection', wss_on_connection);
 
 function wss_on_connection(ws, req) {
+    const remote_auth = req.connection.user;
     const remote_host = req.connection.remoteAddress;
     const remote_port = req.connection.remotePort;
     const location = url.parse(req.url, true);
     console.log('connection from client: %s %s', remote_host, remote_port);
     
-    ws.send(JSON.stringify({ type: "greeting_msg", txt: "Greeting from Websocket server..." })); 
+    ws.send(JSON.stringify({ type: "greeting_msg", txt: "Greeting "+remote_auth+" from Websocket server..." })); 
     
     ws.on('message', function incoming(message) {
         console.log('msg from client: %s', message);
@@ -68,10 +118,10 @@ function wss_on_connection(ws, req) {
         switch (msg.type) {
             case "publish":
                 if (!msg.topic) {
-                    ws.send(JSON.stringify({ type: "warn_msg", txt: "missing topic." })); 
+                    return ws.send(JSON.stringify({ type: "warn_msg", txt: "missing topic." })); 
                 } else {
                     if (!topic_to_subscribers[msg.topic]) {
-                        ws.send(JSON.stringify({ type: "warn_msg", topic: msg.topic, txt: "topic does not exist" })); 
+                        return ws.send(JSON.stringify({ type: "warn_msg", topic: msg.topic, txt: "topic does not exist" })); 
                     } else {
                         var tmp = { type: "msg_rcv", topic: msg.topic, id: msg.id, txt: msg.txt, data_url: msg.data_url };
                         broadcast_on_topic(msg.topic, tmp, msg.loopback?undefined:ws);
@@ -81,6 +131,66 @@ function wss_on_connection(ws, req) {
             case "subscribe":
                 add_topic_subscriber(msg.topic, ws, msg);
                 break;
+
+            case "queue_push":
+                if (!msg.queue_id) return ws.send(JSON.stringify({ type: msg.type, error: "missing queue_id" }));
+                redis_client.rpush(msg.queue_id, JSON.stringify(msg, null, 4), function (err, res) {
+                    return ws.send(JSON.stringify({ type: msg.type, error: err, queue_depth: res }));
+                });
+                break;
+            case "queue_pop":
+                if (!msg.queue_id) return ws.send(JSON.stringify({ type: msg.type, error: "missing queue_id" }));
+                if (!msg.timeout_sec) {
+                    redis_client.lpop(msg.queue_id, function (err, res) {
+                        return ws.send(JSON.stringify({ type: msg.type, error: err, res: res }));
+                    });
+                } else {
+                    redis_client.blpop(msg.queue_id, msg.timeout_sec, function (err, res) {
+                        if (ws.readyState === WebSocket.OPEN) 
+                            return ws.send(JSON.stringify({ type: msg.type, error: err, res: res }));
+                        else 
+                            redis_client.lpush(msg.queue_id, res);
+                    });                    
+                }
+                break;
+
+            case "http_request":
+                if (!msg.url) return ws.send(JSON.stringify({ type: msg.type, error: "missing url" }));
+                var http_method = msg.method || (request.body ? "POST" : "GET" );
+                var http_secure = msg.url.indexOf("https://")===0;
+                var http_callback = function(err, res) {
+ 
+                };
+                var http_prms = { host: msg.url, method: http_method };
+                var http_req = http_secure
+                    ? https.request(http_prms, http_callback)
+                    : http.request(http_prms, http_callback);                    
+                
+                http_req.on('error', function(e) {
+                    return ws.send(JSON.stringify({ type: msg.type, error: e.message }));
+                });
+
+                var data = "";
+                http_req.on('data', function (data_chunk) {
+                    data += data_chunk;
+                });
+                http_req.on('end', function() {
+                    if (ws.readyState === WebSocket.OPEN) 
+                        return ws.send(JSON.stringify({ type: msg.type, res: data }));
+                });
+
+                http_req.end(msg.body);
+
+            case rpc:
+                var rpc_exe = "node.exe";
+                var rpc_args = [ "toupper.js" ];
+                var child = child_process.execFile(rpc_exe, rpc_args, function (err, stdout, stderr) {
+                    if (ws.readyState === WebSocket.OPEN) 
+                        return ws.send(JSON.stringify({ type: msg.type, err: err, stdout: stdout, stderr: stderr }));
+                });
+                child.stdin.setEncoding('utf-8');
+                child.stdin.write("console.log('Hello from PhantomJS')\n");
+                child.stdin.end(); 
         }
     });
 
