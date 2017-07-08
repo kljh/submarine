@@ -1,6 +1,7 @@
 // https://github.com/websockets/ws
 
 console.log('Loading modules...')
+const path = require('path');
 const http = require('http');
 const https = require('https');
 const url = require('url');
@@ -27,6 +28,22 @@ try {
 } catch(e) {}
 
 //const ffi = require('ffi');
+
+// logging
+var winston = require('winston');
+winston.level = process.env.ENV==='development' ? 'debug' : 'info';
+/*
+require('winston-logrotate');
+winston.add(winston.transports.logrotate, {
+        file: path.resolve(__dirname, 'log', 'log'), // this path needs to be absolute
+        timestamp: true,
+        json: false,
+        size: '5k',
+        keep: 999,
+        compress: false }); */
+winston.add(winston.transports.File, { filename: 'wss.log' });
+winston.log('info', 'WSS START');
+
 
 const http_port = process.env['PORT'] || 8085;
 const wss_port = http_port;
@@ -138,7 +155,8 @@ function wss_on_connection(ws, req) {
     
     ws.on('message', function incoming(message) {
         console.log('msg from client: %s', message);
-        
+        winston.log('info', message);
+
         var msg; 
         try { msg = JSON.parse(message); } catch(e) {}
         if (msg)
