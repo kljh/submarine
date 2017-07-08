@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body {
+        width: 100%; margin: 0px; }
+.topbar {
+        width: 100%; height: 100%; margin: 0px; padding: 5px;
+        color: #EEE; background-color: #111; font-size: larger; }
+p {
+        margin: 0px; padding: 5px;
+}
+</style>
+</head>
+<body>
+<div class="topbar" >
+    <span>Login<br/></span>
+</div>
+    <p>
+        Please input an identifier; it can be an email or any nickename.<br/>
+        If you use an email, you can register an avatar with <a href="http://gravatar.com">gravatar.com</a>.
+    </p>
+    <p>
+        <form method="post" action="/login">
+            <p><input type=text name=username>
+            <p><input type=submit value=Login>
+        </form>
+    <p>
+</body>
+</html>

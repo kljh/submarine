@@ -60,13 +60,14 @@ server.listen(http_port, function () { console.log('HTTP server started on port:
 
 // Enabling all CORS request (pre-flight, etc.)
 //   - https://github.com/expressjs/cors
-//   app.use(require('cors')());
-// Basic CORS
+app.use(require('cors')());
+/* Basic CORS
 app.use(function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*");
-    //res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.header('Access-Control-Allow-Origin', "*");
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
     next();
-});
+}); */
 
 // static files 
 const static_file_path = __dirname;
@@ -75,15 +76,36 @@ console.log('HTTP server exposes static files from '+static_file_path+' under '+
 app.use(static_file_base_url, express.static(static_file_path)); // script folder
 
 // dynamic request
+
+// body parsers (results available in req.body)
+app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.json())
+
+// authentication
 if (sspi_auth)
 app.use(function (req, res, next) {
     sspi_auth.authenticate(req, res, function(err){
         res.finished || next();
     });
 });
-app.use(session({ secret: "classified sensitive confidence" }));
-app.use(bodyParser.urlencoded({ extended: false }))
-app.use(bodyParser.json())
+
+// session
+app.use(session({ secret: 'a new Tescent is born' }));
+
+// dynamic request
+app.post('/login', function (req, res) {
+    req.session.username = req.body.username;
+    res.send(req.session.username);
+});
+app.get('/login', function (req, res) {
+    res.send(req.session.username);
+});
+app.get('/logout', function (req, res) {
+    req.session.destroy(function() {
+        res.send("logged-out");
+    })
+});
+
 app.get('/whoami', function (req, res) {
     res.send(JSON.stringify({
         auth: req.connection.user,
@@ -92,8 +114,12 @@ app.get('/whoami', function (req, res) {
         sspi: sspi_auth !== undefined,
         }));
 });
+
 app.get('/', function (req, res) {
-    res.send('Hello '+req.connection.user);
+    if (!req.session || !req.session.username)
+        res.redirect('/static/login.html');
+    else
+        res.redirect('/static/chat.html');
 });
 
 

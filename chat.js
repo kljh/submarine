@@ -60,11 +60,13 @@ function newMessage(e) {
     if (input.value) {
         var message = buildMessage(input.value);
         conversation.appendChild(message);
-        animateMessage(message);
+        //animateMessage(message);
         
         // send msg to server 
         try {
-            ws.send(JSON.stringify({ type: "publish", topic: topic, loopback: false, id: id, txt: input.value })); 
+            ws.send(JSON.stringify({ type: "publish", topic: topic, loopback: false, id: id, txt: input.value }), 
+                function() { animateMessage(message); 
+            }); 
         } catch (e) {
             newBotMessage("message not sent")
         }
@@ -125,13 +127,21 @@ ws_init({
             newBotMessage("connection lost  &#x1F613;!")
             $(".status").text("offline");
         },
+        onerror: function(ev) {
+            newBotMessage("connection error  &#x1F613;!<br/>"+ev)
+            $(".status").text("offline (error)");
+        },
         onjson: function(ev, msg) {
             switch (msg.type) {
                 case "msg_rcv":
                     var txt = msg.txt;
                     if (msg.data_url)
-                        txt = '<img src="'+msg.data_url+'" style="max-width:250px;"><br/>' + txt;
+                        txt = '<img src="'+msg.data_url+'" style="max-width:250px;"><br/>' 
+                            + '<a href="'+msg.data_url+'" class="link_to_data_url" target="_blank">'+txt+'</a>';
                     newBotMessage(txt, msg.id);
+                    $(".link_to_data_url").click(function() {
+                        alert("link_to_data_url");
+                    });
                     break;
                 case "subscriber_joined":
                     newBotMessage(msg.id+" just joined.", msg.id);

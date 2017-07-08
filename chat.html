@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Débats</title>
 
 <!--
 <script src="jquery.js"></script>
@@ -27,13 +28,16 @@ var ws;
 var ws_init_retry_interval_min = 500; // ms
 var ws_init_retry_interval_max = 60000; //ms
 var ws_init_retry_interval = ws_init_retry_interval_min;
+var ws_init_retry_timer;
 function ws_init(opt_prms) {
     var prms = opt_prms || {};
     
     console.log("websocket: connection creation @ "+(new Date().toISOString())+" ..");
     var wss_host = location.origin.replace(/^http/, 'ws');
-    if (location.protocol=="file:")
+    if (location.protocol=="file:") {
         wss_host = "ws://localhost:8085/websocketserver";
+        wss_host = "ws://kljh.herokuapp.com/static/chat.html";
+    }
     ws = new WebSocket(wss_host);
 
     // Two methods : ws.send(msg) end ws.close([code],[reason])
@@ -42,6 +46,7 @@ function ws_init(opt_prms) {
         console.log("websocket: connection open", ev);
         if (prms.onopen) prms.onopen(ev);
         
+        if (ws_init_retry_timer) clearTimeout(ws_init_retry_timer);
         ws_init_retry_interval = ws_init_retry_interval_min;
     });
     ws.addEventListener('close', function (ev) {
@@ -49,7 +54,8 @@ function ws_init(opt_prms) {
         if (prms.onclose) prms.onclose(ev);
         
         ws_init_retry_interval = Math.min(ws_init_retry_interval_max, ws_init_retry_interval*2);
-        setTimeout(ws_init, ws_init_retry_interval);
+        if (ws_init_retry_timer) clearTimeout(ws_init_retry_timer);
+        ws_init_retry_timer = setTimeout(function() { ws_init(prms); }, ws_init_retry_interval);
     });
     ws.addEventListener('error', function (ev) {
         console.log("websocket: connection error", ev);
@@ -58,7 +64,7 @@ function ws_init(opt_prms) {
 
     ws.addEventListener('message', function (ev) {
         console.log("websocket: message from server", ev);
-        console.log(ev.data);
+        //console.log(ev.data);
         
         var msg; 
         try { 

@@ -2,9 +2,15 @@
   "name": "vision",
   "description": "misc node projects",
   "email": "code@main2.fr",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kljh/webapp"
+  },
+  "license": "UNLICENSED",
   "version": "0.0.0",
   "dependencies": {
     "body-parser": "^1.17.2",
+    "cors": "^2.8.3",
     "express": "^4.15.3",
     "express-session": "^1.15.3",
     "pg": "^6.4.0",
