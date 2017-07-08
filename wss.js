@@ -9,7 +9,8 @@ const session = require('express-session')
 const bodyParser = require('body-parser');
 const WebSocket = require('ws');
 
-const sqlite3 = require('sqlite3').verbose();
+const sqlite3 = require('sqlite3'); // .verbose();
+const requestify = require('requestify'); 
 const child_process = require('child_process');
 
 // > redis-server --service-install redis.windows-service.conf
@@ -156,12 +157,28 @@ function wss_on_connection(ws, req) {
 
             case "http_request":
                 if (!msg.url) return ws.send(JSON.stringify({ type: msg.type, error: "missing url" }));
-                var http_method = msg.method || (request.body ? "POST" : "GET" );
-                var http_secure = msg.url.indexOf("https://")===0;
-                var http_callback = function(err, res) {
- 
+                var http_method = msg.method || (msg.body ? "POST" : "GET" );
+                var http_callback = function(res) {
+                    var status = res.getCode();
+                    var headers = res.getHeaders();
+                    var reply_body = res.getBody();
+                    if (ws.readyState === WebSocket.OPEN) 
+                        return ws.send(JSON.stringify({ type: msg.type, status: status, res: reply_body }));
                 };
-                var http_prms = { host: msg.url, method: http_method };
+               
+                if (http_method=="GET")
+                    requestify.get(msg.url).then(http_callback).fail(http_callback);
+                else
+                    requestify.post(msg.url, msg.body).then(http_callback).fail(http_callback);
+
+                /*
+                var http_secure = msg.url.indexOf("https://")===0;
+                var http_prms = { 
+                    url: msg.url, 
+                    host: "google.com",
+                    //port: 80/443,
+                    path: "/",
+                    method: http_method };
                 var http_req = http_secure
                     ? https.request(http_prms, http_callback)
                     : http.request(http_prms, http_callback);                    
@@ -180,8 +197,10 @@ function wss_on_connection(ws, req) {
                 });
 
                 http_req.end(msg.body);
+                */
 
-            case rpc:
+                break;
+            case "rpc":
                 var rpc_exe = "node.exe";
                 var rpc_args = [ "toupper.js" ];
                 var child = child_process.execFile(rpc_exe, rpc_args, function (err, stdout, stderr) {
