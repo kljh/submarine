@@ -32,9 +32,9 @@ try {
 
 // authenticates incoming requests through LDAP.
 var ldap_auth;
-try {
+//try {
     ldap_auth = require('./ldap_auth');
-} catch(e) {}
+//} catch(e) {}
 
 //const ffi = require('ffi');
 
@@ -50,7 +50,7 @@ winston.add(winston.transports.logrotate, {
         size: '5k',
         keep: 999,
         compress: false }); */
-winston.add(winston.transports.File, { filename: 'wss.log' });
+winston.add(winston.transports.File, { filename: "wss-"+(new Date()).toISOString().substr(0,10)+".log" });
 winston.log('info', 'WSS START');
 
 
@@ -132,7 +132,20 @@ app.post('/login', function (req, res) {
     session_info.client_address = { 
         host: req.connection.remoteAddress, 
         port: req.connection.remotePort };
-    res.send(req.session.info);
+    
+    if (ldap_auth && session_info.user_name) {
+        ldap_auth(req.body.username, req.body.userpwd)
+        .then(res => {
+            session_info.ldap.res = res;
+            res.send(req.session.info);
+        })
+        .catch(err => {
+            session_info.ldap.error = err;
+            res.send(req.session.info);
+        });
+    } else {
+        res.send(req.session.info);
+    }
 });
 app.get('/login', function (req, res) {
     res.send(req.session.info);
@@ -143,14 +156,6 @@ app.get('/logout', function (req, res) {
     })
 });
 
-app.get('/whoami', function (req, res) {
-    res.send(JSON.stringify({
-        auth: req.connection.user,
-        host: req.connection.remoteAddress,
-        port: req.connection.remotePort,
-        sspi: sspi_auth !== undefined,
-        }));
-});
 
 app.get('/', function (req, res) {
     if (!req.session || !req.session.username)
@@ -245,33 +250,6 @@ function wss_on_connection(ws, req) {
                 else
                     requestify.post(http_url, msg.body).then(http_callback).fail(http_callback);
 
-                /*
-                var http_secure = http_url.indexOf("https://")===0;
-                var http_prms = { 
-                    host: "google.com",
-                    //port: 80/443,
-                    path: "/",
-                    method: http_method };
-                var http_req = http_secure
-                    ? https.request(http_prms, http_callback)
-                    : http.request(http_prms, http_callback);                    
-                
-                http_req.on('error', function(e) {
-                    return ws.send(JSON.stringify({ type: msg.type, error: e.message }));
-                });
-
-                var data = "";
-                http_req.on('data', function (data_chunk) {
-                    data += data_chunk;
-                });
-                http_req.on('end', function() {
-                    if (ws.readyState === WebSocket.OPEN) 
-                        return ws.send(JSON.stringify({ type: msg.type, res: data }));
-                });
-
-                http_req.end(msg.body);
-                */
-
                 break;
             case "rexec":
                 // Do NOT let people simply input arbitrary exe path, use pre-registered commands instead.
@@ -325,7 +303,7 @@ function add_topic_subscriber(topic, ws, msg) {
     
     // gather subscriber info
     var subscriber_info = msg; 
-    subscriber_info.id = subscriber_info.id;
+    subscriber_info.id = msg.id;
     subscriber_info.ws = ws;
 
     // add subscriber to topic, create topic if needed
