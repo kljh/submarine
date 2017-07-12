@@ -48,6 +48,8 @@ function ws_init(opt_prms) {
         
         if (ws_init_retry_timer) clearTimeout(ws_init_retry_timer);
         ws_init_retry_interval = ws_init_retry_interval_min;
+
+        test_ws(ws);
     });
     ws.addEventListener('close', function (ev) {
         console.log("websocket: connection close", ev);
@@ -75,6 +77,18 @@ function ws_init(opt_prms) {
         
         if (msg && prms.onjson) prms.onjson(ev, msg);
     });
+}
+
+function test_ws(ws) {
+    ws.send(JSON.stringify({ type: "queue_push", queue_id: "basic_test", msg: "aaa" }));
+    ws.send(JSON.stringify({ type: "queue_push", queue_id: "basic_test", msg: { "bbb": 123 } }));
+    ws.send(JSON.stringify({ type: "queue_push", queue_id: "basic_test", msg: [ "ccc", "ddd" ] }));
+    ws.send(JSON.stringify({ type: "queue_pop", queue_id: "basic_test" }));
+    ws.send(JSON.stringify({ type: "queue_pop", queue_id: "basic_test", timeout: 15000 }));
+    ws.send(JSON.stringify({ type: "http_request", url: "http://google.com" }));
+    ws.send(JSON.stringify({ type: "http_request", http_alias: "DEV", body: "host_info" }));
+    ws.send(JSON.stringify({ type: "http_request", http_alias: "UAT", body: { "ayx": 178 } }));
+    ws.send(JSON.stringify({ type: "rexec", rexec_cmd: "to_upper", stdin: "hello low" }));
 }
 </script>
 </head>

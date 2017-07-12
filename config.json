@@ -1,0 +1,18 @@
+{
+    "ldap_server_url_DISABLED" : "ldap://127.0.0.1:1389", 
+    "ldap_user_search" : "cn=", 
+    "ldap_user_attributes" :  [ "dn", "sn", "cn" ],
+
+    "rexec": {
+        "to_upper" : {
+            "exe": "node.exe",
+            "args": [ "toupper.js" ]
+        }
+    }, 
+
+    "http": {
+        "DEV": { "url": "http://localhost:8085/" },
+        "UAT": { "url": "http://uat.grid.com/" },
+        "PRD": { "url": "http://prd.grid.com/" }
+    }
+}

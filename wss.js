@@ -1,6 +1,7 @@
 // https://github.com/websockets/ws
 
 console.log('Loading modules...')
+const cfg = require('./config.json');
 const path = require('path');
 const http = require('http');
 const https = require('https');
@@ -18,13 +19,21 @@ const child_process = require('child_process');
 var redis_client;
 try {
     redis_client = require('redis').createClient(process.env.REDIS_URL);
-} catch(e) {}
+} catch(e) {
+    console.error("Redis cache not available.", e);
+}
 
 // authenticates incoming requests through native Windows SSPI, hence **runs on Windows only**.
 var sspi_auth;
 try {
     var sspi = require('node-sspi');
     sspi_auth = new sspi({ retrieveGroups: false });
+} catch(e) {}
+
+// authenticates incoming requests through LDAP.
+var ldap_auth;
+try {
+    ldap_auth = require('./ldap_auth');
 } catch(e) {}
 
 //const ffi = require('ffi');
@@ -100,7 +109,7 @@ app.use(bodyParser.json())
 
 // authentication
 if (sspi_auth)
-app.use(function (req, res, next) {
+app.use("/login", function (req, res, next) {
     sspi_auth.authenticate(req, res, function(err){
         res.finished || next();
     });
@@ -111,11 +120,22 @@ app.use(session({ secret: 'a new Tescent is born' }));
 
 // dynamic request
 app.post('/login', function (req, res) {
-    req.session.username = req.body.username;
-    res.send(req.session.username);
+    req.session.info = {}
+    var session_info = req.session.info;
+    session_info.session_id = req.session.id;
+    session_info.user_name = req.body.username;
+    session_info.ldap = {
+        mod: ldap_auth ? "installed" : "not_installed" };
+    session_info.sspi = {
+        uid: req.connection.user,
+        mod: sspi_auth ? "installed" : "not_installed" };
+    session_info.client_address = { 
+        host: req.connection.remoteAddress, 
+        port: req.connection.remotePort };
+    res.send(req.session.info);
 });
 app.get('/login', function (req, res) {
-    res.send(req.session.username);
+    res.send(req.session.info);
 });
 app.get('/logout', function (req, res) {
     req.session.destroy(function() {
@@ -200,9 +220,19 @@ function wss_on_connection(ws, req) {
                 break;
 
             case "http_request":
-                if (!msg.url) return ws.send(JSON.stringify({ type: msg.type, error: "missing url" }));
+                var http_url = msg.url;
+                // Let people use pre-registered HTTP aliases
+                var http_alias = msg.http_alias;
+                if (http_alias && cfg && cfg.http) {
+                    http_url = cfg.http[http_alias].url;
+                }
+
+                if (!http_url) return ws.send(JSON.stringify({ type: msg.type, error: "missing HTTP url or alias" }));
                 var http_method = msg.method || (msg.body ? "POST" : "GET" );
                 var http_callback = function(res) {
+                    if (res.errno)
+                         return ws.send(JSON.stringify({ type: msg.type, url: http_url, error: res }));
+                    
                     var status = res.getCode();
                     var headers = res.getHeaders();
                     var reply_body = res.getBody();
@@ -211,14 +241,13 @@ function wss_on_connection(ws, req) {
                 };
                
                 if (http_method=="GET")
-                    requestify.get(msg.url).then(http_callback).fail(http_callback);
+                    requestify.get(http_url).then(http_callback).fail(http_callback);
                 else
-                    requestify.post(msg.url, msg.body).then(http_callback).fail(http_callback);
+                    requestify.post(http_url, msg.body).then(http_callback).fail(http_callback);
 
                 /*
-                var http_secure = msg.url.indexOf("https://")===0;
+                var http_secure = http_url.indexOf("https://")===0;
                 var http_prms = { 
-                    url: msg.url, 
                     host: "google.com",
                     //port: 80/443,
                     path: "/",
@@ -244,15 +273,21 @@ function wss_on_connection(ws, req) {
                 */
 
                 break;
-            case "rpc":
-                var rpc_exe = "node.exe";
-                var rpc_args = [ "toupper.js" ];
-                var child = child_process.execFile(rpc_exe, rpc_args, function (err, stdout, stderr) {
+            case "rexec":
+                // Do NOT let people simply input arbitrary exe path, use pre-registered commands instead.
+                var rexec_cmd = msg.rexec_cmd;
+                var rexec_exe = "node.exe";
+                var rexec_args = [ "toupper.js" ];
+                if (rexec_cmd && cfg && cfg.rexec) {
+                    rexec_exe = cfg.rexec[rexec_cmd].exe;
+                    rexec_args = cfg.rexec[rexec_cmd].args;
+                }
+                var child = child_process.execFile(rexec_exe, rexec_args, function (err, stdout, stderr) {
                     if (ws.readyState === WebSocket.OPEN) 
                         return ws.send(JSON.stringify({ type: msg.type, err: err, stdout: stdout, stderr: stderr }));
                 });
                 child.stdin.setEncoding('utf-8');
-                child.stdin.write("console.log('Hello from PhantomJS')\n");
+                child.stdin.write(msg.stdin);
                 child.stdin.end(); 
         }
     });
