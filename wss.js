@@ -178,10 +178,15 @@ app.use('/oauth-github', function (req, res){
                 method: 'POST',
                 params: params,
                 body: params,
-                dataType: 'json' // for body : "json"|"form-url-encoded"|body-served-as-string.
+                dataType: 'json', // for body : "json"|"form-url-encoded"|body-served-as-string.
+                redirect: true
         }).then(function (res2) {
-            res.send(JSON.stringify({ "code": oauth_code, "request_query": req.query, "request_body": req.body, 
-                "reply_code": res.getCode(), "reply_headers": res.getHeaders(), "reply_body": res.getBody() }));            
+            try {
+                res.send(JSON.stringify({ "code": oauth_code, "request_query": req.query, "request_body": req.body, 
+                    "reply_code": res2.getCode(), "reply_headers": res2.getHeaders(), "reply_body": res2.getBody() }));
+            } catch(e) {
+                res.send("Error reading back oauth_access_token");
+            }
         }).fail(function (err) {
             res.send(JSON.stringify({ "code": oauth_code, "request_query": req.query, "request_body": req.body, "error": err }));
         });
