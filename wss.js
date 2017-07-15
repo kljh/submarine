@@ -174,13 +174,16 @@ app.use('/oauth-github', function (req, res){
             "state": "engolirsapos", // The unguessable random string provided in OAuth Step 1.
             "redirect_uri": "https://kljh.herokuapp.com/static/chat.html" };
 
-        requestify.post("https://github.com/login/oauth/access_token", params, { 
-            // headers: { "Content-Type": http_content_type }
+        requestify.request("https://github.com/login/oauth/access_token", { 
+                method: 'POST',
+                params: params,
+                body: params,
+                dataType: 'json' // for body : "json"|"form-url-encoded"|body-served-as-string.
         }).then(function (res2) {
-            res.send(JSON.stringify({ "request_query": req.query, "request_body": req.body, 
+            res.send(JSON.stringify({ "code": oauth_code, "request_query": req.query, "request_body": req.body, 
                 "reply_code": res.getCode(), "reply_headers": res.getHeaders(), "reply_body": res.getBody() }));            
         }).fail(function (err) {
-            res.send(JSON.stringify({ "request_query": req.query, "request_body": req.body, "error": err }));
+            res.send(JSON.stringify({ "code": oauth_code, "request_query": req.query, "request_body": req.body, "error": err }));
         });
     }
     
