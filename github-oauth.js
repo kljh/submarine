@@ -20,7 +20,7 @@ function github_oauth(req, res) {
         "client_secret": creds.secret, 
         "code": oauth_code,  // The code received as a response to OAuth Step 1.
         "state": "engolirsapos", // The unguessable random string provided in OAuth Step 1.
-        "redirect_uri": "https://kljh.herokuapp.com/oauth-github" };
+        "redirect_uri": "https://kljh.herokuapp.com/github-oauth" };
 
     requestify.request("https://github.com/login/oauth/access_token", { 
             method: 'POST',
