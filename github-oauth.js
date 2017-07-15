@@ -51,11 +51,11 @@ function github_oauth(req, res) {
 
     .then(function (user_info_response) {
         var user_info = user_info_response.getBody()
-        res.send(JSON.stringify({ "request_query": req.query, "request_body": req.body, 
-            "reply_code": user_info_response.getCode(), "reply_body": user_info })); 
 
         req.session.info = req.session.info || {}
         req.session.info.github_oauth = user_info;
+
+        res.send(JSON.stringify(req.session.info)); 
     })
     .fail(function (user_info_error) {
         res.send(JSON.stringify({ "error": "failed getting user info", "user_info_error": user_info_error }));
