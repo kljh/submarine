@@ -1,9 +1,9 @@
 var creds;
-try { 
-    creds = require('./credentials.json').github; 
-} catch(e) {
+//try { 
+//    creds = require('./credentials.json').github; 
+//} catch(e) {
     creds = { id: process.env.GITHUB_ID, secret: process.env.GITHUB_SECRET };
-}
+//}
 
 function github_oauth(req, res) {
     //express
@@ -52,8 +52,8 @@ function github_oauth(req, res) {
         res.send(JSON.stringify({ "request_query": req.query, "request_body": req.body, 
             "reply_code": user_info_response.getCode(), "reply_body": user_info })); 
 
-        req.session.info = req.session.info || {}
-        req.session.info.github_oauth = user_info;
+        // req.session.info = req.session.info || {}
+        // req.session.info.github_oauth = user_info;
     })
     .fail(function (user_info_error) {
         res.send(JSON.stringify({ "error": "failed getting user info", "user_info_error": user_info_error }));
