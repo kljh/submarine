@@ -172,7 +172,7 @@ app.use('/oauth-github', function (req, res){
             "client_secret": "18237bfec2be07b8e013fb5634abe4e2bb2c5e46", 
             "code": oauth_code,  // The code received as a response to OAuth Step 1.
             "state": "engolirsapos", // The unguessable random string provided in OAuth Step 1.
-            "redirect_uri": "https://kljh.herokuapp.com/static/chat.html" };
+            "redirect_uri": "https://kljh.herokuapp.com/oauth-github" };
 
         requestify.request("https://github.com/login/oauth/access_token", { 
                 method: 'POST',
