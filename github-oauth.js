@@ -1,3 +1,5 @@
+const requestify = require('requestify'); 
+
 var creds;
 //try { 
 //    creds = require('./credentials.json').github; 
@@ -33,7 +35,7 @@ function github_oauth(req, res) {
     .then(function (access_token_response) {
         var oauth_access_token = access_token_response.getBody().access_token;
 
-        if (1) // stop here for debug purpose, other onecarry one with the request for user details
+        if (0) // stop here for debug purpose, other onecarry one with the request for user details
         res.send(JSON.stringify({ "oauth_code": oauth_code, "oauth_access_token": oauth_access_token, 
             "request_query": req.query, "request_body": req.body, 
             "reply_code": access_token_response.getCode(), "reply_body": access_token_response.getBody() }));
@@ -52,8 +54,8 @@ function github_oauth(req, res) {
         res.send(JSON.stringify({ "request_query": req.query, "request_body": req.body, 
             "reply_code": user_info_response.getCode(), "reply_body": user_info })); 
 
-        // req.session.info = req.session.info || {}
-        // req.session.info.github_oauth = user_info;
+        req.session.info = req.session.info || {}
+        req.session.info.github_oauth = user_info;
     })
     .fail(function (user_info_error) {
         res.send(JSON.stringify({ "error": "failed getting user info", "user_info_error": user_info_error }));
