@@ -6,3 +6,4 @@ heroku
 res
 package-lock.json
 jquery.js
+credentials.json
