@@ -33,7 +33,7 @@ function github_oauth(req, res) {
     .then(function (access_token_response) {
         var oauth_access_token = access_token_response.getBody().access_token;
 
-        if (0) // stop here for debug purpose, other onecarry one with the request for user details
+        if (1) // stop here for debug purpose, other onecarry one with the request for user details
         res.send(JSON.stringify({ "oauth_code": oauth_code, "oauth_access_token": oauth_access_token, 
             "request_query": req.query, "request_body": req.body, 
             "reply_code": access_token_response.getCode(), "reply_body": access_token_response.getBody() }));
