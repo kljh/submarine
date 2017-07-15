@@ -156,6 +156,9 @@ app.get('/logout', function (req, res) {
     })
 });
 
+app.use('/oauth-github', function (req, res){
+    res.send(JSON.stringify(res.body));
+});
 
 app.get('/', function (req, res) {
     if (!req.session || !req.session.username)
