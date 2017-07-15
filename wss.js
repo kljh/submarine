@@ -157,7 +157,46 @@ app.get('/logout', function (req, res) {
 });
 
 app.use('/oauth-github', function (req, res){
-    res.send(JSON.stringify(res.body));
+
+    //express
+    //req.query[url_query_param_name]
+    //req.headers["content-type"]
+    //req.method=="POST"
+    //req.body "string" ou "object" depending on content-type
+
+    var oauth_code = req.query.code
+    if (oauth_code) {
+        // User has accepted authentication through GitHub. We receive a "code" that can be exchanged for a "access_token"
+        var params = {
+            "client_id": "882645c486929ee1587f",
+            "client_secret": "18237bfec2be07b8e013fb5634abe4e2bb2c5e46", 
+            "code": oauth_code,  // The code received as a response to OAuth Step 1.
+            "state": "engolirsapos", // The unguessable random string provided in OAuth Step 1.
+            "redirect_uri": "https://kljh.herokuapp.com/static/chat.html" };
+
+        requestify.post("https://github.com/login/oauth/access_token", params, { 
+            // headers: { "Content-Type": http_content_type }
+        }).then(function (res2) {
+            res.send(JSON.stringify({ "request_query": req.query, "request_body": req.body, 
+                "reply_code": res.getCode(), "reply_headers": res.getHeaders(), "reply_body": res.getBody() }));            
+        }).fail(function (err) {
+            res.send(JSON.stringify({ "request_query": req.query, "request_body": req.body, "error": err }));
+        });
+    }
+    
+    var oauth_access_token = req.query.oauth_access_token || req.body.access_token;
+    if (oauth_access_token) {
+        // We now have an "access_token",we can use it to query the GitHub API
+        
+        requestify.get("https://api.github.com/user?access_token="+oauth_access_token, { 
+            headers: { "Authorization": "token "+oauth_access_token }
+        }).then(function (res2) {
+            res.send(JSON.stringify({ "request_query": req.query, "request_body": req.body, 
+                "reply_code": res.getCode(), "reply_headers": res.getHeaders(), "reply_body": res.getBody() }));            
+        }).fail(function (err) {
+            res.send(JSON.stringify({ "request_query": req.query, "request_body": req.body, "error": err }));
+        });
+    }
 });
 
 app.get('/', function (req, res) {
