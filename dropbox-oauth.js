@@ -35,8 +35,9 @@ function dropbox_oauth(req, res) {
     })
 
     .then(function (access_token_response) {
-        var oauth_access_details = access_token_response.getBody();
-        var oauth_access_token = access_token_response.getBody().access_token;
+        var oauth_access_body = access_token_response.getBody();
+        var oauth_access_data = oauth_access_body.substr ? JSON.parse(oauth_access_body) : oauth_access_body;
+        var oauth_access_token = oauth_access_data.access_token;
 
         if (0) // stop here for debug purpose, other onecarry one with the request for user details
         res.send(JSON.stringify({ "oauth_code": oauth_code, "oauth_access_token": oauth_access_token, 
@@ -44,8 +45,9 @@ function dropbox_oauth(req, res) {
             "reply_code": access_token_response.getCode(), "reply_body": access_token_response.getBody() }));
 
         req.session.info = req.session.info || {}
-        req.session.info.dropbox_oauth_access_token = oauth_access_token;
-        req.session.info.dropbox_oauth_access_details = oauth_access_details;
+        req.session.info.dropbox_oauth_access_details = {
+            oauth_access_token: ""+oauth_access_token,
+            oauth_access_body: oauth_access_body };
 
         // We now have an "access_token",we can use it to query the Dropbox API        
         request_user_details(oauth_access_token, res);
@@ -64,6 +66,12 @@ function request_user_details(oauth_access_token, res) {
         }, 
         function (error, response, body) {
             if (!error && response.statusCode == 200) {
+                var user_info = body;
+                if (user_info.substr) try { user_info = JSON.parse(user_info) } catch(e) {}
+                
+                req.session.info = req.session.info || {}
+                req.session.info.dropbox_oauth = user_info;
+            
                 console.log(body);
                 res.send(body);
             } else {
