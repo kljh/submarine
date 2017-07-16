@@ -34,6 +34,7 @@ function dropbox_oauth(req, res) {
     })
 
     .then(function (access_token_response) {
+        var oauth_access_details = access_token_response.getBody();
         var oauth_access_token = access_token_response.getBody().access_token;
 
         if (0) // stop here for debug purpose, other onecarry one with the request for user details
@@ -41,8 +42,12 @@ function dropbox_oauth(req, res) {
             "request_query": req.query, "request_body": req.body, 
             "reply_code": access_token_response.getCode(), "reply_body": access_token_response.getBody() }));
 
+        req.session.info = req.session.info || {}
+        req.session.info.dropbox_oauth_access_token = oauth_access_token;
+        req.session.info.dropbox_oauth_access_details = oauth_access_details;
+
         // We now have an "access_token",we can use it to query the Dropbox API
-        return requestify.get("https://api.dropboxapi.com/2/users/get_current_account?access_token="+oauth_access_token, { 
+        return requestify.get("https://api.dropboxapi.com/2/users/get_current_account", { 
             headers: { "Authorization": "Bearer "+oauth_access_token }
         })
     })
