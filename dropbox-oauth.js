@@ -50,14 +50,14 @@ function dropbox_oauth(req, res) {
             oauth_access_body: oauth_access_body };
 
         // We now have an "access_token",we can use it to query the Dropbox API        
-        request_user_details(oauth_access_token, res);
+        request_user_details(oauth_access_token, req, res);
     })
     .fail(function (access_token_error) {
         res.send(JSON.stringify({ "error": "failed getting access token from "+oauth_code, "access_token_error": access_token_error }));
     })
 }
 
-function request_user_details(oauth_access_token, res) {
+function request_user_details(oauth_access_token, req, res) {
             
     request({
             url: "https://api.dropboxapi.com/2/users/get_current_account?authorization=Bearer "+oauth_access_token,
@@ -86,6 +86,6 @@ module.exports = function(app) {
     app.use('/dropbox-oauth', dropbox_oauth);
 
     app.get('/dropbox-test', function (req, res) {
-        request_user_details("xZnMzR8xfRkAAAAAAABBzO0-auBxADRLQM56QGVMzS7wBwvdhT_2HXql8EeoTMjl", res);
+        request_user_details("xZnMzR8xfRkAAAAAAABBzO0-auBxADRLQM56QGVMzS7wBwvdhT_2HXql8EeoTMjl", req, res);
     });
 };
