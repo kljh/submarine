@@ -168,8 +168,38 @@ app.get('/logout', function (req, res) {
 require("./github-oauth.js")(app);
 require("./dropbox-oauth.js")(app);
 
+function whoami(req) {
+    if (!req.session || !req.session.info)
+        return ; // can't do anything
+    
+    var me = {};
+    var info = req.session.info;
+    if (info.github_oauth) { 
+        me.name = me.name || info.github_oauth.login;
+        me.email = me.email || info.github_oauth.email;
+    }
+    if (info.dropbox_oauth && info.dropbox_oauth.name) {
+        me.name = me.name || info.dropbox_oauth.name.display_name;
+        me.email = me.email || info.dropbox_oauth.name.email;
+    }    
+    if (info.ldap) {
+        me.name = me.name || info.ldap.sn || info.ldap.cn || info.ldap.dn;
+        me.email = me.email || info.ldap.email;
+    }
+    if (info.sspi) {
+        me.name = me.name || info.sspi.user;
+    }
+    return me;
+}
+app.get('/whoami', function (req, res) {
+    req.session.destroy(function() {
+        res.send(whoami(req));
+    })
+});
+
+
 app.get('/', function (req, res) {
-    if (!req.session || !req.session.username)
+    if (!req.session || !req.session.info)
         res.redirect('/static/login.html');
     else
         res.redirect('/static/chat.html');
@@ -177,10 +207,9 @@ app.get('/', function (req, res) {
 
 fs.mkdir(path.join(__dirname, 'uploads'), function() {});
 app.use('/upload', function(req, res) {
-    var id = req.session.info && (
-        req.session.info.github_oauth && req.session.info.github_oauth.login 
-        || req.session.info.dropbox_oauth && req.session.info.dropbox_oauth.email );
-    
+    var me = whoami(req);
+    if (!me||!me.name) res.sendStatus(403);
+
     var content_type = req.headers["content-type"];
 
     // "multipart/form-data; boundary=----WebKitFormBoundary..."
