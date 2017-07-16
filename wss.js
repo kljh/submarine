@@ -3,6 +3,7 @@
 console.log('Loading modules...')
 const cfg = require('./config.json');
 const path = require('path');
+const fs = require('fs');
 const http = require('http');
 const https = require('https');
 const url = require('url');
@@ -20,6 +21,9 @@ const child_process = require('child_process');
 var redis_client;
 try {
     redis_client = require('redis').createClient(process.env.REDIS_URL);
+    redis_client.on("error", function(err) {
+        console.error("Redis error", err);
+    });
 } catch(e) {
     console.error("Redis cache not available.", e);
 }
@@ -40,18 +44,21 @@ var ldap_auth;
 //const ffi = require('ffi');
 
 // logging
+var log_folder = path.join(__dirname, 'logs');
+if (!fs.existsSync(log_folder))
+    fs.mkdirSync(log_folder);
 var winston = require('winston');
 winston.level = process.env.ENV==='development' ? 'debug' : 'info';
 /*
 require('winston-logrotate');
 winston.add(winston.transports.logrotate, {
-        file: path.resolve(__dirname, 'log', 'log'), // this path needs to be absolute
+        file: path.resolve(log_folder, 'log'), // this path needs to be absolute
         timestamp: true,
         json: false,
-        size: '5k',
+        size: '100k',
         keep: 999,
         compress: false }); */
-winston.add(winston.transports.File, { filename: "wss-"+(new Date()).toISOString().substr(0,10)+".log" });
+winston.add(winston.transports.File, { filename: log_folder+"/wss-"+(new Date()).toISOString().substr(0,10)+".log" });
 winston.log('info', 'WSS START');
 
 
@@ -97,7 +104,7 @@ app.use(function(req, res, next) {
 }); */
 
 // static files 
-const static_file_path = __dirname;
+const static_file_path = path.join(__dirname, 'static');
 const static_file_base_url = '/static';
 console.log('HTTP server exposes static files from '+static_file_path+' under '+static_file_base_url+' ...');
 app.use(static_file_base_url, express.static(static_file_path)); // script folder
@@ -105,6 +112,7 @@ app.use(static_file_base_url, express.static(static_file_path)); // script folde
 // dynamic request
 
 // body parsers (results available in req.body)
+app.use(bodyParser.text())
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 
@@ -167,31 +175,38 @@ app.get('/', function (req, res) {
         res.redirect('/static/chat.html');
 });
 
-app.get('/upload', function(req, res) {
+fs.mkdir(path.join(__dirname, 'uploads'), function() {});
+app.use('/upload', function(req, res) {
     var id = req.session.info && (
         req.session.info.github_oauth && req.session.info.github_oauth.login 
         || req.session.info.dropbox_oauth && req.session.info.dropbox_oauth.email );
-    res.send({ id:""+id, info: req.session.info});
+    
+    var content_type = req.headers["content-type"];
 
+    // "multipart/form-data; boundary=----WebKitFormBoundary..."
     var form = new formidable.IncomingForm();
-    form.uploadDir = path.join(__dirname, '/uploads'); // store directory
+    form.uploadDir = path.join(__dirname, 'uploads'); // store directory
     form.multiples = true; // allow multiple files in a single request    
 
     // every time a file has been uploaded successfully,  rename it to it's orignal name
     form.on('file', function(field, file) {
-        fs.rename(file.path, path.join(form.uploadDir, file.name));
+        fs.rename(file.path, path.join(form.uploadDir, file.name), err => {});
     });
 
     form.on('error', function(err) {
-        console.error('An error has occured: \n' + err);
+        res.send('upload error\n' + err);
     });
 
     form.on('end', function() {
-        res.end('upload success');
+        res.send('upload success');
     });
 
     // parse the incoming request containing the form data
     form.parse(req);
+});
+app.get('/uploads/:filename', function(req, res) {
+    //res.send(req.params.filename);
+    res.sendFile(path.join(__dirname, 'uploads', req.params.filename));
 });
 
 console.log('WebSocket server starting ...');
@@ -313,6 +328,7 @@ function broadcast(wss, msg, opt_excluded_ws) {
         }
     });
 };
+
 
 function broadcast_on_topic(topic, msg, opt_excluded_ws) {
     var subscriber_infos = topic_to_subscribers[topic]; 

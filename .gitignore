@@ -7,3 +7,5 @@ res
 package-lock.json
 jquery.js
 credentials.json
+logs/
+uploads/
