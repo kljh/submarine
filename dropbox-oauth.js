@@ -21,7 +21,8 @@ function dropbox_oauth(req, res) {
         "client_id": creds.id,
         "client_secret": creds.secret, 
         "code": oauth_code,  // The code received as a response to OAuth Step 1.
-        "state": "engolirsapos", // The unguessable random string provided in OAuth Step 1.
+        //"state": "engolirsapos", // The unguessable random string provided in OAuth Step 1.
+        "grant_type": "authorization_code",
         "redirect_uri": "https://kljh.herokuapp.com/dropbox-oauth" };
 
     requestify.request("https://api.dropboxapi.com/oauth2/token", { 
