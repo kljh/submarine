@@ -1,4 +1,5 @@
 const requestify = require('requestify'); 
+const request = require('request');
 
 var creds;
 //try { 
@@ -46,29 +47,37 @@ function dropbox_oauth(req, res) {
         req.session.info.dropbox_oauth_access_token = oauth_access_token;
         req.session.info.dropbox_oauth_access_details = oauth_access_details;
 
-        // We now have an "access_token",we can use it to query the Dropbox API
-        return requestify.get("https://api.dropboxapi.com/2/users/get_current_account", { 
-            headers: { "Authorization": "Bearer "+oauth_access_token }
-        })
+        // We now have an "access_token",we can use it to query the Dropbox API        
+        request_user_details(oauth_access_token, res);
     })
     .fail(function (access_token_error) {
         res.send(JSON.stringify({ "error": "failed getting access token from "+oauth_code, "access_token_error": access_token_error }));
     })
+}
 
-    .then(function (user_info_response) {
-        var user_info = user_info_response.getBody()
+function request_user_details(oauth_access_token, res) {
+            
+    request({
+            url: "https://api.dropboxapi.com/2/users/get_current_account?authorization=Bearer "+oauth_access_token,
+            method: "POST",
+            body: "",
+        }, 
+        function (error, response, body) {
+            if (!error && response.statusCode == 200) {
+                console.log(body);
+                res.send(body);
+            } else {
+                res.send({ error: error, response: response, body: body, oauth_access_token: oauth_access_token});
+            }
+        }
+    );
 
-        req.session.info = req.session.info || {}
-        req.session.info.dropbox_oauth = user_info;
-
-        res.send(JSON.stringify(req.session.info)); 
-    })
-    .fail(function (user_info_error) {
-        res.send(JSON.stringify({ "error": "failed getting user info", "user_info_error": user_info_error }));
-    });
-    
 }
 
 module.exports = function(app) {
     app.use('/dropbox-oauth', dropbox_oauth);
+
+    app.get('/dropbox-test', function (req, res) {
+        request_user_details("xZnMzR8xfRkAAAAAAABBzO0-auBxADRLQM56QGVMzS7wBwvdhT_2HXql8EeoTMjl", res);
+    });
 };
