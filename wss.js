@@ -180,7 +180,7 @@ function whoami(req) {
     }
     if (info.dropbox_oauth && info.dropbox_oauth.name) {
         me.name = me.name || info.dropbox_oauth.name.display_name;
-        me.email = me.email || info.dropbox_oauth.name.email;
+        me.email = me.email || info.dropbox_oauth.email;
     }    
     if (info.ldap) {
         me.name = me.name || info.ldap.sn || info.ldap.cn || info.ldap.dn;
@@ -192,9 +192,7 @@ function whoami(req) {
     return me;
 }
 app.get('/whoami', function (req, res) {
-    req.session.destroy(function() {
-        res.send(whoami(req));
-    })
+    res.send(whoami(req));
 });
 
 
