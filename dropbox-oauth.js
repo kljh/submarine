@@ -1,11 +1,11 @@
 const requestify = require('requestify'); 
 
 var creds;
-try { 
-    creds = require('./credentials.json').dropbox; 
-} catch(e) {
+//try { 
+//    creds = require('./credentials.json').dropbox; 
+//} catch(e) {
     creds = { id: process.env.DROPBOX_ID, secret: process.env.DROPBOX_SECRET };
-}
+//}
 
 function dropbox_oauth(req, res) {
     //express
@@ -41,7 +41,6 @@ function dropbox_oauth(req, res) {
             "reply_code": access_token_response.getCode(), "reply_body": access_token_response.getBody() }));
 
         // We now have an "access_token",we can use it to query the Dropbox API
-https://api.dropboxapi.com/2/users/get_account
         return requestify.get("https://api.dropboxapi.com/2/users/get_current_account?access_token="+oauth_access_token, { 
             headers: { "Authorization": "Bearer "+oauth_access_token }
         })
