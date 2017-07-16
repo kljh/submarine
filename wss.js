@@ -9,6 +9,7 @@ const url = require('url');
 const express = require('express');
 const session = require('express-session')
 const bodyParser = require('body-parser');
+const formidable = require('formidable');
 const WebSocket = require('ws');
 
 const sqlite3 = require('sqlite3'); // .verbose();
@@ -157,6 +158,7 @@ app.get('/logout', function (req, res) {
 });
 
 require("./github-oauth.js")(app);
+require("./dropbox-oauth.js")(app);
 
 app.get('/', function (req, res) {
     if (!req.session || !req.session.username)
@@ -165,6 +167,32 @@ app.get('/', function (req, res) {
         res.redirect('/static/chat.html');
 });
 
+app.get('/upload', function(req, res) {
+    var id = req.session.info && (
+        req.session.info.github_oauth && req.session.info.github_oauth.login 
+        || req.session.info.dropbox_oauth && req.session.info.dropbox_oauth.email );
+    res.send({ id:""+id, info: req.session.info});
+
+    var form = new formidable.IncomingForm();
+    form.uploadDir = path.join(__dirname, '/uploads'); // store directory
+    form.multiples = true; // allow multiple files in a single request    
+
+    // every time a file has been uploaded successfully,  rename it to it's orignal name
+    form.on('file', function(field, file) {
+        fs.rename(file.path, path.join(form.uploadDir, file.name));
+    });
+
+    form.on('error', function(err) {
+        console.error('An error has occured: \n' + err);
+    });
+
+    form.on('end', function() {
+        res.end('upload success');
+    });
+
+    // parse the incoming request containing the form data
+    form.parse(req);
+});
 
 console.log('WebSocket server starting ...');
 const wss = new WebSocket.Server({ server: server });
