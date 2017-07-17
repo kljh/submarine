@@ -49,7 +49,7 @@ function ws_init(opt_prms) {
         if (ws_init_retry_timer) clearTimeout(ws_init_retry_timer);
         ws_init_retry_interval = ws_init_retry_interval_min;
 
-        test_ws(ws);
+        //test_ws(ws);
     });
     ws.addEventListener('close', function (ev) {
         console.log("websocket: connection close", ev);
@@ -124,6 +124,7 @@ function test_ws(ws) {
           <div class="star">
             <i class="zmdi zmdi-star"></i>
           </div>
+          <div id="whoami"></div>
         </div>
         
         <div class="chat">
@@ -159,7 +160,7 @@ function test_ws(ws) {
             </div>
             <div class="conversation">
               <div class="conversation-container">
-              
+                <!--
                 <div class="message sent">
                   What happened last night?
                   <span class="metadata">
@@ -171,7 +172,7 @@ function test_ws(ws) {
                   <span id="random">You were hugging an old man with a beard screaming "DUMBLEDORE YOU'RE ALIVE!"</span>
                   <span class="metadata"><span class="time"></span></span>
                 </div>
-                
+                -->
               </div>
               
               <form class="conversation-compose">

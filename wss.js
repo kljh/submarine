@@ -125,7 +125,8 @@ app.use("/login", function (req, res, next) {
 });
 
 // session
-app.use(session({ secret: 'a new Tescent is born' }));
+const session_handler = session({ secret: 'a new Tescent is born' });
+app.use(session_handler);
 
 // dynamic request
 app.post('/login', function (req, res) {
@@ -247,7 +248,14 @@ function wss_on_connection(ws, req) {
     const location = url.parse(req.url, true);
     console.log('connection from client: %s %s', remote_host, remote_port);
     
-    ws.send(JSON.stringify({ type: "greeting_msg", txt: "Greeting "+remote_auth+" from Websocket server..." })); 
+    ws.send(JSON.stringify({ type: "greeting_msg", txt: "Greeting "+remote_auth+" from Websocket server...\n"
+        + "Session info not yet loaded: " + JSON.stringify(whoami(req)) })); 
+    
+    // force retriving session info from cookie
+    session_handler(req, {}, function() {
+        ws.send(JSON.stringify({ type: "greeting_msg", txt: "Greeting "+remote_auth+" from Websocket server...\n"
+            + "Session  loaded: " + JSON.stringify(whoami(req)) })); 
+    })
     
     ws.on('message', function incoming(message) {
         console.log('msg from client: %s', message);
@@ -276,22 +284,28 @@ function wss_on_connection(ws, req) {
             case "queue_push":
                 if (!msg.queue_id) return ws.send(JSON.stringify({ type: msg.type, error: "missing queue_id" }));
                 redis_client.rpush(msg.queue_id, JSON.stringify(msg, null, 4), function (err, res) {
-                    return ws.send(JSON.stringify({ type: msg.type, error: err, queue_depth: res }));
+                    ws.send(JSON.stringify({ type: msg.type, error: err, queue_depth: res }));
                 });
                 break;
             case "queue_pop":
                 if (!msg.queue_id) return ws.send(JSON.stringify({ type: msg.type, error: "missing queue_id" }));
-                if (!msg.timeout_sec) {
+                if (!msg.timeout_sec && !msg.loop) {
                     redis_client.lpop(msg.queue_id, function (err, res) {
-                        return ws.send(JSON.stringify({ type: msg.type, error: err, res: res }));
+                        ws.send(JSON.stringify({ type: msg.type, error: err, res: JSON.parse(res) }));
                     });
                 } else {
-                    redis_client.blpop(msg.queue_id, msg.timeout_sec, function (err, res) {
-                        if (ws.readyState === WebSocket.OPEN) 
-                            return ws.send(JSON.stringify({ type: msg.type, error: err, res: res }));
-                        else 
-                            redis_client.lpush(msg.queue_id, res);
-                    });                    
+                    function pop_one() {
+                        redis_client.blpop(msg.queue_id, msg.timeout_sec || 5, function (err, res) {
+                            if (ws.readyState === WebSocket.OPEN) { 
+                                if (res)
+                                    ws.send(JSON.stringify({ type: msg.type, error: err, res: JSON.parse(res[1]) }));
+                                if (msg.loop) pop_one();
+                            } else {
+                                redis_client.lpush(msg.queue_id, res); // put back on front of the queue
+                            }
+                        });
+                    }
+                    pop_one();
                 }
                 break;
 
@@ -338,6 +352,7 @@ function wss_on_connection(ws, req) {
                 child.stdin.setEncoding('utf-8');
                 child.stdin.write(msg.stdin);
                 child.stdin.end(); 
+                break;
         }
     });
 

@@ -1,7 +1,5 @@
 $(function() {
 
-$.get("/whoami");
-
 var memes = [
     'Dude, you smashed my turtle saying "I\'M MARIO BROS!"',
     'Dude, you grabed seven oranges and yelled "I GOT THE DRAGON BALLS!"',
@@ -13,7 +11,7 @@ var memes = [
 
 var random = document.querySelector('#random');
 
-random.innerHTML = memes[Math.floor(Math.random() * memes.length)];
+//random.innerHTML = memes[Math.floor(Math.random() * memes.length)];
 
 /* Time */
 
@@ -40,6 +38,8 @@ var form = document.querySelector('.conversation-compose');
 var conversation = document.querySelector('.conversation-container');
 /*var*/ id = uri_args()["id"] || ("little "+(new Date().toISOString().replace(/:/g,'')));
 /*var*/ topic = uri_args()["topic"] || "big_corp";
+/*var*/ queue_tx = undefined;
+/*var*/ queue_rx = undefined; 
 
 form.addEventListener('submit', newMessage);
 
@@ -64,9 +64,10 @@ function newMessage(e) {
         
         // send msg to server 
         try {
-            ws.send(JSON.stringify({ type: "publish", topic: topic, loopback: false, id: id, txt: input.value }), 
-                function() { animateMessage(message); 
-            }); 
+            if (!queue_tx)
+                ws.send(JSON.stringify({ type: "publish", topic: topic, loopback: false, id: id, txt: input.value }), function() { animateMessage(message); });
+            else
+                ws.send(JSON.stringify({ type: "queue_push", queue_id: queue_tx, txt: input.value }), function() { animateMessage(message); }); 
         } catch (e) {
             newBotMessage("message not sent")
         }
@@ -112,15 +113,27 @@ function animateMessage(message) {
     }, 500);
 }
 
-ws_init({
+$.get("/whoami", function (res) { 
+    $("#whoami").html(res.name);
+
+    $("#whoami").attr("data-tipit-content", "mail: "+res.email);
+    $("#whoami").attr("data-tipit-placement", "bottom");
+    $("#whoami").tipit();
+
+    queue_rx = res.email;
+    queue_tx = uri_args()["to"];
+
+    ws_init({
         onopen: function(ev) {
             newBotMessage("connected with server &#x1F604;")
             ws.send(JSON.stringify({ type: "subscribe", topic: topic, id: id }));
+            ws.send(JSON.stringify({ type: "queue_pop", queue_id: queue_rx, loop: true }));
             $(".status").text("connected");
         },
         onreopen: function(ev) {
             newBotMessage("reconnected with server &#x1F62C;.")
             ws.send(JSON.stringify({ type: "subscribe", topic: topic, id: id }));
+            ws.send(JSON.stringify({ type: "queue_pop", queue_id: queue_rx, loop: true }));
             $(".status").text("connected");
         },
         onclose: function(ev) {
@@ -149,12 +162,17 @@ ws_init({
                 case "subscriber_left":
                     newBotMessage(msg.id+" just left.", msg.id);
                     break;
+                case "queue_pop":
+                    if (msg.res.txt)
+                    newBotMessage(msg.res.txt, msg.res.queue_id);
+                    break;
                 default:
                     console.warn("unhandled message", msg);
                     break;
             }
         }
     });
+});
 
 
 function setEditableChangeEvent(id, fct) {
