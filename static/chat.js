@@ -123,6 +123,12 @@ $.get("/whoami", function (res) {
     queue_rx = res.email;
     queue_tx = uri_args()["to"];
 
+    if (queue_tx) {
+        $('#user_id').text(queue_tx);
+        var h = MD5(queue_tx);
+        $(".avatar > img").attr("src", "http://gravatar.com/avatar/"+h+"?default=retro");
+    }
+    
     ws_init({
         onopen: function(ev) {
             newBotMessage("connected with server &#x1F604;")
@@ -145,6 +151,9 @@ $.get("/whoami", function (res) {
             $(".status").text("offline (error)");
         },
         onjson: function(ev, msg) {
+            if (msg.error)
+                return console.warn("error message", msg);
+                    
             switch (msg.type) {
                 case "msg_rcv":
                     var txt = msg.txt;
@@ -163,7 +172,7 @@ $.get("/whoami", function (res) {
                     newBotMessage(msg.id+" just left.", msg.id);
                     break;
                 case "queue_pop":
-                    if (msg.res.txt)
+                    if (msg.res && msg.res.txt)
                     newBotMessage(msg.res.txt, msg.res.queue_id);
                     break;
                 default:

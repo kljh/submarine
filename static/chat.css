@@ -133,7 +133,7 @@ body {
   margin: 0 0 0 8px;
   overflow: hidden;
   white-space: nowrap;
-  width: 110px;
+  width:50%;
 }
 
 .user-bar .status {

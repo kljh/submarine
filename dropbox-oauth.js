@@ -2,11 +2,11 @@ const requestify = require('requestify');
 const request = require('request');
 
 var creds;
-//try { 
-//    creds = require('./credentials.json').dropbox; 
-//} catch(e) {
+try { 
+    creds = require('./credentials.json').dropbox; 
+} catch(e) {
     creds = { id: process.env.DROPBOX_ID, secret: process.env.DROPBOX_SECRET };
-//}
+}
 
 function dropbox_oauth(req, res) {
     //express
@@ -82,10 +82,28 @@ function request_user_details(oauth_access_token, req, res) {
 
 }
 
+function request_access_token_revoke(oauth_access_token, req, res) {
+            
+    request({
+            url: "https://api.dropboxapi.com/2/auth/token/revoke?authorization=Bearer "+oauth_access_token,
+            method: "POST",
+            body: "",
+        }, 
+        function (error, response, body) {
+            res.send({ error: error, response: response, body: body, oauth_access_token: oauth_access_token});
+        }
+    );
+
+}
+
+
 module.exports = function(app) {
     app.use('/dropbox-oauth', dropbox_oauth);
 
-    app.get('/dropbox-test', function (req, res) {
-        request_user_details("xZnMzR8xfRkAAAAAAABBzO0-auBxADRLQM56QGVMzS7wBwvdhT_2HXql8EeoTMjl", req, res);
+    app.get('/dropbox-oauth-user', function (req, res) {
+        request_user_details(req.query.access_token || creds.access_token, req, res);
+    });
+    app.get('/dropbox-oauth-revoke', function (req, res) {
+        request_access_token_revoke(req.query.access_token || creds.access_token, req, res);
     });
 };
