@@ -72,8 +72,9 @@ function request_user_details(oauth_access_token, req, res) {
                 req.session.info = req.session.info || {}
                 req.session.info.dropbox_oauth = user_info;
             
-                console.log(body);
-                res.send(body);
+                console.log(user_info);
+                //res.send(user_info);
+                res.redirect('/');
             } else {
                 res.send({ error: error, response: response, body: body, oauth_access_token: oauth_access_token});
             }

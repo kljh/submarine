@@ -121,7 +121,7 @@ $.get("/whoami", function (res) {
     $("#whoami").tipit();
 
     queue_rx = res.email;
-    queue_tx = uri_args()["to"];
+    queue_tx = uri_args()["to"] || queue_rx;
 
     if (queue_tx) {
         $('#user_id').text(queue_tx);

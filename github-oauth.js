@@ -55,7 +55,8 @@ function github_oauth(req, res) {
         req.session.info = req.session.info || {}
         req.session.info.github_oauth = user_info;
 
-        res.send(JSON.stringify(user_info)); 
+        //res.send(JSON.stringify(user_info)); 
+        res.redirect('/');
     })
     .fail(function (user_info_error) {
         res.send(JSON.stringify({ "error": "failed getting user info", "user_info_error": user_info_error }));
