@@ -13,6 +13,10 @@ var random = document.querySelector('#random');
 
 //random.innerHTML = memes[Math.floor(Math.random() * memes.length)];
 
+$.getJSON("https://happyukgo.com/api/fortune/", function (data) {
+    random.innerHTML = data;
+});
+
 /* Time */
 
 var deviceTime = document.querySelector('.status-bar .time');
