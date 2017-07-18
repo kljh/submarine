@@ -124,14 +124,22 @@ $.get("/whoami", function (res) {
     $("#whoami").attr("data-tipit-placement", "bottom");
     $("#whoami").tipit();
 
-    queue_rx = res.email;
-    queue_tx = uri_args()["to"] || queue_rx;
+    var to_user =  uri_args()["to"] || (localStorage&&localStorage["to_user"]);
 
-    if (queue_tx) {
-        $('#user_id').text(queue_tx);
-        var h = MD5(queue_tx);
+    if (to_user) {
+        $('#user_id').text(to_user);
+        var h = MD5(to_user);
         $(".avatar > img").attr("src", "http://gravatar.com/avatar/"+h+"?default=retro");
+        if (localStorage)
+            localStorage["to_user"] = to_user;
     }
+    
+
+    queue_rx = res.email;
+    queue_tx = to_user;
+
+    if (!queue_tx) 
+        queue_tx = queue_rx; // loopback if no recipent to default to
     
     ws_init({
         onopen: function(ev) {

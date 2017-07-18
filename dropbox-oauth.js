@@ -40,7 +40,7 @@ function dropbox_oauth(req, res) {
         var oauth_access_token = oauth_access_data.access_token;
 
         if (0) // stop here for debug purpose, other onecarry one with the request for user details
-        res.send(JSON.stringify({ "oauth_code": oauth_code, "oauth_access_token": oauth_access_token, 
+        return res.send(JSON.stringify({ "oauth_code": oauth_code, "oauth_access_token": oauth_access_token, 
             "request_query": req.query, "request_body": req.body, 
             "reply_code": access_token_response.getCode(), "reply_body": access_token_response.getBody() }));
 
@@ -54,11 +54,12 @@ function dropbox_oauth(req, res) {
     })
     .fail(function (access_token_error) {
         res.send(JSON.stringify({ "error": "failed getting access token from "+oauth_code, "access_token_error": access_token_error }));
+        return new Promise.reject(access_token_error);
     })
 }
 
 function request_user_details(oauth_access_token, req, res) {
-            
+
     request({
             url: "https://api.dropboxapi.com/2/users/get_current_account?authorization=Bearer "+oauth_access_token,
             method: "POST",

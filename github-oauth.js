@@ -47,6 +47,7 @@ function github_oauth(req, res) {
     })
     .fail(function (access_token_error) {
         res.send(JSON.stringify({ "error": "failed getting access token from "+oauth_code, "access_token_error": access_token_error }));
+        return new Promise.reject(access_token_error);
     })
 
     .then(function (user_info_response) {
@@ -60,6 +61,7 @@ function github_oauth(req, res) {
     })
     .fail(function (user_info_error) {
         res.send(JSON.stringify({ "error": "failed getting user info", "user_info_error": user_info_error }));
+        return new Promise.reject(user_info_error);
     });
     
 }
