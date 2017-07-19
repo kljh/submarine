@@ -13,7 +13,6 @@ const bodyParser = require('body-parser');
 const formidable = require('formidable');
 const WebSocket = require('ws');
 
-const sqlite3 = require('sqlite3'); // .verbose();
 const requestify = require('requestify'); 
 const child_process = require('child_process');
 
@@ -67,24 +66,6 @@ const wss_port = http_port;
 
 // Control maximum number of concurrent HTTP request 
 //http.globalAgent.maxSockets = 20; // default 5
-
-/*
-var db = new sqlite3.Database('queues.sqlite');
-db.serialize(function() {
-  db.run("CREATE TABLE IF NOT EXISTS lorem (info TEXT)");
-  var stmt = db.prepare("INSERT INTO lorem VALUES (?)");
-  for (var i = 0; i < 10; i++) {
-      stmt.run("Ipsum " + i);
-  }
-  stmt.finalize();
-
-  db.each("SELECT rowid AS id, info FROM lorem", function(err, row) {
-      console.log(row.id + ": " + row.info);
-  });
-});
-
-db.close();
-*/
 
 
 console.log('HTTP server starting ...');
@@ -236,6 +217,8 @@ app.get('/uploads/:filename', function(req, res) {
     //res.send(req.params.filename);
     res.sendFile(path.join(__dirname, 'uploads', req.params.filename));
 });
+
+const sqlite_app = require('./sqlite.js').sqlite_install(app); 
 
 console.log('WebSocket server starting ...');
 const wss = new WebSocket.Server({ server: server });
