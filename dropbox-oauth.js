@@ -98,6 +98,30 @@ function request_access_token_revoke(oauth_access_token, req, res) {
 
 }
 
+function request_upload(opt_oauth_access_token, opt_file_path, opt_file_data, req, res) {
+    var oauth_access_token = opt_oauth_access_token ||         
+        ( req.session && req.session.info && req.session.info.dropbox_oauth_access_details && req.session.info.dropbox_oauth_access_details.oauth_access_token );
+    var file_path = opt_file_path || req.query.path;
+    var file_data = opt_file_data || req.query.data || req.body;
+
+    request({
+            url: "https://content.dropboxapi.com/2/files/upload?authorization=Bearer "+oauth_access_token,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/octet-stream",
+                "Dropbox-API-Arg": JSON.stringify({ path: file_path, mode: "add", autorename: true, mute: false })
+            },
+            body: file_data,
+        }, 
+        function (error, response, body) {
+            var msg = { error: error, response: response, body: body, oauth_access_token: oauth_access_token };
+            if (res)
+                res.send(msg);
+            else 
+                console.log(msg);
+        }
+    );
+}
 
 module.exports = function(app) {
     app.use('/dropbox-oauth', dropbox_oauth);
@@ -107,5 +131,8 @@ module.exports = function(app) {
     });
     app.get('/dropbox-oauth-revoke', function (req, res) {
         request_access_token_revoke(req.query.access_token || creds.access_token, req, res);
+    });
+    app.get('/dropbox-upload', function (req, res) {
+        request_upload(req.query.access_token, undefined, undefined, req, res);
     });
 };
