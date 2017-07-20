@@ -267,7 +267,11 @@ function wss_on_connection(ws, req) {
             case "queue_push":
                 if (!msg.queue_id) return ws.send(JSON.stringify({ type: msg.type, error: "missing queue_id" }));
                 redis_client.rpush(msg.queue_id, JSON.stringify(msg, null, 4), function (err, res) {
-                    ws.send(JSON.stringify({ type: msg.type, queue_id: msg.queue_id, error: err, queue_depth: res }));
+                    if (ws.readyState === WebSocket.OPEN) { 
+                        ws.send(JSON.stringify({ type: msg.type, queue_id: msg.queue_id, error: err, queue_depth: res }));
+                    } else {
+                        redis_client.lpush(msg.queue_id, res); // put back on front of the queue
+                    }
                 });
                 break;
             case "queue_pop":
@@ -282,7 +286,8 @@ function wss_on_connection(ws, req) {
                             if (ws.readyState === WebSocket.OPEN) { 
                                 if (res)
                                     ws.send(JSON.stringify({ type: msg.type, queue_id: msg.queue_id, error: err, res: JSON.parse(res[1]) }));
-                                if (msg.loop) pop_one();
+                                if (msg.loop) 
+                                    pop_one();
                             } else {
                                 redis_client.lpush(msg.queue_id, res); // put back on front of the queue
                             }
