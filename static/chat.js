@@ -13,6 +13,11 @@ var random = document.querySelector('#random');
 
 //random.innerHTML = memes[Math.floor(Math.random() * memes.length)];
 
+setTimeout(
+	function () { 
+        $("#user_id").tipit(); // !! does not work
+    }, 5000);
+
 $.getJSON("https://happyukgo.com/api/fortune/", function (data) {
     random.innerHTML = data;
 });
@@ -118,13 +123,25 @@ function animateMessage(message) {
 }
 
 $.get("/whoami", function (res) { 
+    if (!res) {
+        window.location.href = "/"; // behaves as a link
+        //window.location.replace("/"); // behaves as a redirect
+    }
+    if (!res.email) {
+        prompt("No email configured with this ID, please log with another provider.\n"
+            + "Or define a public email in my profile with this provider.", 
+            "Declaration on honor: I'll go to Github set a proper profile and code.");
+        window.location.href = "/";
+        //window.location.replace("/");
+    }
+    
     $("#whoami").html(res.name);
 
     $("#whoami").attr("data-tipit-content", "mail: "+res.email);
     $("#whoami").attr("data-tipit-placement", "bottom");
     $("#whoami").tipit();
 
-    var to_user =  uri_args()["to"] || (localStorage&&localStorage["to_user"]);
+    var to_user =  uri_args()["to"] || (localStorage&&localStorage["to_user"]) || res.email;
 
     if (to_user) {
         $('#user_id').text(to_user);
@@ -133,14 +150,10 @@ $.get("/whoami", function (res) {
         if (localStorage)
             localStorage["to_user"] = to_user;
     }
-    
 
-    queue_rx = res.email;
-    queue_tx = to_user;
+    queue_rx = to_user+"-to-"+res.email;
+    queue_tx = res.email+"-to-"+to_user;
 
-    if (!queue_tx) 
-        queue_tx = queue_rx; // loopback if no recipent to default to
-    
     ws_init({
         onopen: function(ev) {
             newBotMessage("connected with server &#x1F604;")
@@ -214,8 +227,12 @@ setEditableChangeEvent('#user_id', function(ev) {
     var elnt = document.querySelector('#user_id');
     var h = MD5(elnt.innerText);
     $(".avatar > img").attr("src", "http://gravatar.com/avatar/"+h+"?default=retro");
-    if (localStorage)
+    if (localStorage) {
         localStorage["to_user"] = elnt.innerText;
+        window.location.reload();
+    } else {
+        window.location.replace(window.location.pathname+"?to="+elnt.innerText);
+    }
 });
 
 // paper clip and photo icons can be used for file upload (as well as drag and drop onver the UI)
