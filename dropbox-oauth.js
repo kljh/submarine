@@ -132,7 +132,7 @@ module.exports = function(app) {
     app.get('/dropbox-oauth-revoke', function (req, res) {
         request_access_token_revoke(req.query.access_token || creds.access_token, req, res);
     });
-    app.get('/dropbox-upload', function (req, res) {
+    app.use('/dropbox-upload', function (req, res) {
         request_upload(req.query.access_token, undefined, undefined, req, res);
     });
 };
