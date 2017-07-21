@@ -142,7 +142,9 @@ function request_upload(opt_oauth_access_token, opt_file_path, opt_file_data, re
     ])
     .then(function(api_res) {
         try { 
-            api_res = { url: api_res[1].response.body.url, api_res: api_res };
+            var body = api_res[1].response.body;
+            if (body.substr) body = JSON.parse(body);
+            api_res = { url: body.url, api_res: api_res };
         } catch(e) {} 
         if (res)
             res.send(api_res);
