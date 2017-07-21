@@ -19,7 +19,7 @@ const child_process = require('child_process');
 // > redis-server --service-install redis.windows-service.conf
 var redis_client;
 try {
-    redis_client = require('redis').createClient(process.env.REDIS_URL);
+    redis_client = require('redis').createClient(process.env.REDIS_URL || cfg.redis_server_url);
     redis_client.on("error", function(err) {
         console.error("Redis error", err);
     });
@@ -289,7 +289,8 @@ function wss_on_connection(ws, req) {
                                 if (msg.loop) 
                                     pop_one();
                             } else {
-                                redis_client.lpush(msg.queue_id, res); // put back on front of the queue
+                                if (res)
+                                    redis_client.lpush(msg.queue_id, res); // put back on front of the queue
                             }
                         });
                     }

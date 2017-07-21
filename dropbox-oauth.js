@@ -104,23 +104,55 @@ function request_upload(opt_oauth_access_token, opt_file_path, opt_file_data, re
     var file_path = opt_file_path || req.query.path;
     var file_data = opt_file_data || req.query.data || req.body;
 
-    request({
-            url: "https://content.dropboxapi.com/2/files/upload?authorization=Bearer "+oauth_access_token,
-            method: "POST",
-            headers: {
-                "Content-Type": "application/octet-stream",
-                "Dropbox-API-Arg": JSON.stringify({ path: file_path, mode: "add", autorename: true, mute: false })
-            },
-            body: file_data,
-        }, 
-        function (error, response, body) {
-            var msg = { error: error, response: response, body: body, oauth_access_token: oauth_access_token };
-            if (res)
-                res.send(msg);
-            else 
-                console.log(msg);
-        }
-    );
+    Promise.all([
+        new Promise(function (resolve, reject) {
+            request({
+                    url: "https://content.dropboxapi.com/2/files/upload?authorization=Bearer "+oauth_access_token,
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/octet-stream",
+                        "Dropbox-API-Arg": JSON.stringify({ path: file_path, mode: "add", autorename: true, mute: false })
+                    },
+                    body: file_data,
+                }, 
+                function (error, response, body) {
+                    if (error || (response && response.statusCode==400)) 
+                        reject({ error: error, response: response, body: body });
+                    else resolve({ error: error, response: response, body: body })
+                });
+        }),
+        new Promise(function (resolve, reject) {
+            request({
+                    url: "https://api.dropboxapi.com/2/sharing/create_shared_link?authorization=Bearer "+oauth_access_token,
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        path: file_path,
+                        short_url: false, 
+                        pending_upload : "file"
+                    })
+                }, 
+                function (error, response, body) {
+                    if (error) reject(error);
+                    else resolve({ error: error, response: response, body: body })
+                });
+        }) 
+    ])
+    .then(function(api_res) {
+        api_res[1].url;
+        if (res)
+            res.send(api_res);
+        else 
+            console.log(api_res);
+    })
+    .catch(function(err) {
+        if (res)
+            res.send(err);
+        else 
+            console.log(err);
+    });
 }
 
 module.exports = function(app) {
