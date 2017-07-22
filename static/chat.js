@@ -294,7 +294,7 @@ function publish_files(file_list) {
 }
 
 function publish_file(f) {
-    var img = ['png','jpg','jpeg'].indexOf(f.name.split('.').pop()) != -1;
+    var img = ['png','jpg','jpeg','gif'].indexOf(f.name.split('.').pop()) != -1;
     console.log("publish file name = " + f.name + " size: " + f.size + " lastModified: " + f.lastModified  );
 
     var reader = new FileReader();
