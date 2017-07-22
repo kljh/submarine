@@ -131,11 +131,11 @@ function animateMessage(message) {
 $.get("/whoami", function (res) { 
     if (!res) {
         var answer = prompt("Please log-in. Use Github, Dropbox, or solve challenge below by head: \n", "sqrt(1369*3969) = ..");
-        if (answer) {
+        if (answer || 1) {
             window.location.href = "/"; // behaves as a link
             //window.location.replace("/"); // behaves as a redirect
         }
-    } else if (!res.email) {
+    } else if (!res.email || 1) {
         var answer = prompt("No email configured with this ID, please log with another provider.\n"
             + "Or define a public email in my profile with this provider.", 
             "Declaration on honor: I'll go to Github set a proper profile and code.");
@@ -159,6 +159,7 @@ $.get("/whoami", function (res) {
         $(".avatar > img").attr("src", "http://gravatar.com/avatar/"+h+"?default=retro");
     }
 
+    id = res.email || res.name;
     queue_rx = to_user+"-to-"+res.email;
     queue_tx = res.email+"-to-"+to_user;
 
