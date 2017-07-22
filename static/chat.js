@@ -1,5 +1,8 @@
 $(function() {
 
+if (uri_args()["to"] && localStorage)
+    localStorage["to_user"] = uri_args()["to"];
+
 var memes = [
     'Dude, you smashed my turtle saying "I\'M MARIO BROS!"',
     'Dude, you grabed seven oranges and yelled "I GOT THE DRAGON BALLS!"',
@@ -13,10 +16,8 @@ var random = document.querySelector('#random');
 
 //random.innerHTML = memes[Math.floor(Math.random() * memes.length)];
 
-setTimeout(
-	function () { 
-        $("#user_id").tipit(); // !! does not work
-    }, 5000);
+setTimeout( function () { $("#user_id")[0].showTipit(); }, 3000);
+setTimeout( function () { $("#user_id")[0].hideTipit(); }, 7000);
 
 $.getJSON("https://happyukgo.com/api/fortune/", function (data) {
     random.innerHTML = data;
@@ -65,24 +66,29 @@ function newMessage(e) {
     e.stopPropagation();
     
     var input = e.target.input;
+    var txt = input.value; 
+    newMessageOut(input.value)
+    input.value = '';
+}
 
-    if (input.value) {
-        var message = buildMessage(input.value);
+newMessageOut = function (txt) {
+
+    if (txt) {
+        var message = buildMessage(txt);
         conversation.appendChild(message);
         //animateMessage(message);
         
         // send msg to server 
         try {
             if (!queue_tx)
-                ws.send(JSON.stringify({ type: "publish", topic: topic, loopback: false, id: id, txt: input.value }), function() { animateMessage(message); });
+                ws.send(JSON.stringify({ type: "publish", topic: topic, loopback: false, id: id, txt: txt }), function() { animateMessage(message); });
             else
-                ws.send(JSON.stringify({ type: "queue_push", queue_id: queue_tx, txt: input.value }), function() { animateMessage(message); }); 
+                ws.send(JSON.stringify({ type: "queue_push", queue_id: queue_tx, txt: txt }), function() { animateMessage(message); }); 
         } catch (e) {
             newBotMessage("message not sent")
         }
     }
 
-    input.value = '';
     conversation.scrollTop = conversation.scrollHeight;
 }
 
@@ -124,15 +130,19 @@ function animateMessage(message) {
 
 $.get("/whoami", function (res) { 
     if (!res) {
-        window.location.href = "/"; // behaves as a link
-        //window.location.replace("/"); // behaves as a redirect
-    }
-    if (!res.email) {
-        prompt("No email configured with this ID, please log with another provider.\n"
+        var answer = prompt("Please log-in. Use Github, Dropbox, or solve challenge below by head: \n", "sqrt(1369*3969) = ..");
+        if (answer) {
+            window.location.href = "/"; // behaves as a link
+            //window.location.replace("/"); // behaves as a redirect
+        }
+    } else if (!res.email) {
+        var answer = prompt("No email configured with this ID, please log with another provider.\n"
             + "Or define a public email in my profile with this provider.", 
             "Declaration on honor: I'll go to Github set a proper profile and code.");
-        window.location.href = "/";
-        //window.location.replace("/");
+        if (answer) {
+            window.location.href = "/";
+            //window.location.replace("/");
+        }
     }
     
     $("#whoami").html(res.name);
@@ -147,8 +157,6 @@ $.get("/whoami", function (res) {
         $('#user_id').text(to_user);
         var h = MD5(to_user);
         $(".avatar > img").attr("src", "http://gravatar.com/avatar/"+h+"?default=retro");
-        if (localStorage)
-            localStorage["to_user"] = to_user;
     }
 
     queue_rx = to_user+"-to-"+res.email;
@@ -182,13 +190,7 @@ $.get("/whoami", function (res) {
             switch (msg.type) {
                 case "msg_rcv":
                     var txt = msg.txt;
-                    if (msg.data_url)
-                        txt = '<img src="'+msg.data_url+'" style="max-width:250px;"><br/>' 
-                            + '<a href="'+msg.data_url+'" class="link_to_data_url" target="_blank">'+txt+'</a>';
                     newBotMessage(txt, msg.id);
-                    $(".link_to_data_url").click(function() {
-                        alert("link_to_data_url");
-                    });
                     break;
                 case "subscriber_joined":
                     newBotMessage(msg.id+" just joined.", msg.id);
@@ -292,17 +294,33 @@ function publish_files(file_list) {
 }
 
 function publish_file(f) {
+    var img = ['png','jpg','jpeg'].indexOf(f.name.split('.').pop()) != -1;
     console.log("publish file name = " + f.name + " size: " + f.size + " lastModified: " + f.lastModified  );
 
     var reader = new FileReader();
     reader.addEventListener("load", function (ev) {
-        var base64_data_url = reader.result;
-        var msg = JSON.stringify({ type: "publish", topic: topic, loopback: false, id: id, txt: f.name, data_url: base64_data_url, lastModified: f.lastModified });
-        ws.send(msg); 
-        console.log(msg.substr(0, 512));
+        //var base64_data_url = reader.result;
+        $.ajax({
+            url: '/upload?path='+f.name, // /dropbox-upload ?
+            type: 'POST',
+            data: reader.result,
+            processData: false,
+            contentType: "application/octet-stream",
+            success: function(data){
+                console.log('upload successful!\n', f.name, data.url);
+                newMessageOut('<a href="'+data.url+'" target="_blank">'
+                    + (img?'<img src="'+data.url+'" style="max-width:250px;"><br/>':'')
+                    + f.name + '</a>');
+            },
+            error: function(err) {
+                console.error('upload error!\n', err);
+                newMessageOut('upload error!<br/>'+err);
+            }
+        });
     }, false);
-    reader.readAsDataURL(f);
+    //reader.readAsDataURL(f);
     //reader.readAsText(f);
+    reader.readAsArrayBuffer(f);
 }
 
 function drop_handler(ev) {

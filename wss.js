@@ -93,6 +93,7 @@ app.use(static_file_base_url, express.static(static_file_path)); // script folde
 // dynamic request
 
 // body parsers (results available in req.body)
+app.use(bodyParser.raw());
 app.use(bodyParser.text())
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
@@ -188,10 +189,19 @@ app.get('/', function (req, res) {
 fs.mkdir(path.join(__dirname, 'uploads'), function() {});
 app.use('/upload', function(req, res) {
     var me = whoami(req);
-    if (!me||!me.name) res.sendStatus(403);
+    if (!me||!me.name) return res.sendStatus(403);
+
+    var httpd_path = '/uploads/' + req.query.path;
+    var local_path = path.join(__dirname, 'uploads', req.query.path);
 
     var content_type = req.headers["content-type"];
-
+    if (content_type=="application/octet-stream") {
+        fs.writeFile(local_path, req.body, function(err) {
+            res.send({ error: err, url: httpd_path });
+        })
+        return;
+    }
+    
     // "multipart/form-data; boundary=----WebKitFormBoundary..."
     var form = new formidable.IncomingForm();
     form.uploadDir = path.join(__dirname, 'uploads'); // store directory
