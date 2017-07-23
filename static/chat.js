@@ -139,11 +139,11 @@ $.get("/whoami", function (res) {
             return;
         }
     } else
-    if (!res.email || !debug) {
+    if (!res.email) {
         var answer = prompt("No email configured with this ID, please log with another provider.\n"
             + "Or define a public email in my profile with this provider.", 
             "Declaration on honor: I'll go to Github set a proper profile and code.");
-        if (answer) {
+        if (answer || !debug) {
             window.location.href = "/";
             return;
         }
