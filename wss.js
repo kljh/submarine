@@ -18,11 +18,16 @@ const child_process = require('child_process');
 
 // > redis-server --service-install redis.windows-service.conf
 var redis_client;
+var redis_session_store;
 try {
     redis_client = require('redis').createClient(process.env.REDIS_URL || cfg.redis_server_url);
     redis_client.on("error", function(err) {
         console.error("Redis error", err);
     });
+
+    // Redis will be used as a session store
+    var redis_session_store_ctor = require('connect-redis')(session);
+    redis_session_store = new redis_session_store_ctor({ client: redis_client });
 } catch(e) {
     console.error("Redis cache not available.", e);
 }
@@ -107,7 +112,7 @@ app.use("/login", function (req, res, next) {
 });
 
 // session
-const session_handler = session({ secret: 'a new Tescent is born' });
+const session_handler = session({ secret: 'a new Tescent is born', store: redis_session_store });
 app.use(session_handler);
 
 // dynamic request

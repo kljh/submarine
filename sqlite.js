@@ -262,7 +262,7 @@ var memory_db = new sqlite3.Database(":memory:", function (err) {
     if (err) 
         throw new Error("couldn't create SQLite :memory: DB"); 
 
-    sqlite3_test();
+    //sqlite3_test();
 });
 
 module.exports = {

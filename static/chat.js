@@ -1,5 +1,7 @@
 $(function() {
 
+var debug = false; 
+
 if (uri_args()["to"] && localStorage)
     localStorage["to_user"] = uri_args()["to"];
 
@@ -131,17 +133,19 @@ function animateMessage(message) {
 $.get("/whoami", function (res) { 
     if (!res) {
         var answer = prompt("Please log-in. Use Github, Dropbox, or solve challenge below by head: \n", "sqrt(1369*3969) = ..");
-        if (answer || 1) {
+        if (answer || !debug) {
             window.location.href = "/"; // behaves as a link
             //window.location.replace("/"); // behaves as a redirect
+            return;
         }
-    } else if (!res.email || 1) {
+    } else
+    if (!res.email || !debug) {
         var answer = prompt("No email configured with this ID, please log with another provider.\n"
             + "Or define a public email in my profile with this provider.", 
             "Declaration on honor: I'll go to Github set a proper profile and code.");
         if (answer) {
             window.location.href = "/";
-            //window.location.replace("/");
+            return;
         }
     }
     
@@ -165,19 +169,19 @@ $.get("/whoami", function (res) {
 
     ws_init({
         onopen: function(ev) {
-            newBotMessage("connected with server &#x1F604;")
+            //newBotMessage("connected with server &#x1F604;")
             ws.send(JSON.stringify({ type: "subscribe", topic: topic, id: id }));
             ws.send(JSON.stringify({ type: "queue_pop", queue_id: queue_rx, loop: true }));
             $(".status").text("connected");
         },
         onreopen: function(ev) {
-            newBotMessage("reconnected with server &#x1F62C;.")
+            //newBotMessage("reconnected with server &#x1F62C;.")
             ws.send(JSON.stringify({ type: "subscribe", topic: topic, id: id }));
             ws.send(JSON.stringify({ type: "queue_pop", queue_id: queue_rx, loop: true }));
             $(".status").text("connected");
         },
         onclose: function(ev) {
-            newBotMessage("connection lost  &#x1F613;!")
+            newBotMessage("connection closed  &#x1F613;!")
             $(".status").text("offline");
         },
         onerror: function(ev) {
