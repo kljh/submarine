@@ -218,7 +218,7 @@ app.use('/upload', function(req, res) {
     });
 
     form.on('error', function(err) {
-        res.send('upload error\n' + err);
+        res.send({ error: err, error_message: err.message, error_stack: err.stack, error_context: 'form upload eror' });
     });
 
     form.on('end', function() {

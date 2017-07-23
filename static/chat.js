@@ -181,11 +181,12 @@ $.get("/whoami", function (res) {
             $(".status").text("connected");
         },
         onclose: function(ev) {
-            newBotMessage("connection closed  &#x1F613;!")
+            //newBotMessage("connection closed  &#x1F613;!")
             $(".status").text("offline");
         },
         onerror: function(ev) {
-            newBotMessage("connection error  &#x1F613;!<br/>"+ev)
+            //newBotMessage("connection error  &#x1F613;!<br/>"+ev)
+            console.error("connection error", ev);
             $(".status").text("offline (error)");
         },
         onjson: function(ev, msg) {
@@ -319,7 +320,7 @@ function publish_file(f) {
             },
             error: function(err) {
                 console.error('upload error!\n', err);
-                newMessageOut('upload error!<br/>'+err);
+                newMessageOut('upload error!<br/>'+JSON.stringify(err));
             }
         });
     }, false);
