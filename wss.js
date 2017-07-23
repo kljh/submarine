@@ -98,7 +98,7 @@ app.use(static_file_base_url, express.static(static_file_path)); // script folde
 // dynamic request
 
 // body parsers (results available in req.body)
-app.use(bodyParser.raw());
+app.use(bodyParser.raw({ limit: '50mb' }));
 app.use(bodyParser.text())
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
