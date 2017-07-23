@@ -199,10 +199,10 @@ $.get("/whoami", function (res) {
                     newBotMessage(txt, msg.id);
                     break;
                 case "subscriber_joined":
-                    newBotMessage(msg.id+" just joined.", msg.id);
+                    //newBotMessage(msg.id+" just joined.", msg.id);
                     break;
                 case "subscriber_left":
-                    newBotMessage(msg.id+" just left.", msg.id);
+                    //newBotMessage(msg.id+" just left.", msg.id);
                     break;
                 case "queue_pop":
                     if (msg.res && msg.res.txt)
