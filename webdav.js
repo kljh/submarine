@@ -477,7 +477,8 @@ function webdav_init(cfg_args) {
     console.log("HTTP WebDav under Win7: \\\\localhost@"+cfg_args.http_port+"\\DavWWWRoot")
     
     function webdav_handler(req, res, next) {
-        console.log("webdav", req.method, res.body);
+        if ([ 'HEAD', 'GET', 'PUT', 'POST' ].indexOf(req.method)==-1)
+            console.log("webdav", req.method, res.body || "(no body)" );
 
         switch (req.method) {
             case 'HEAD':
@@ -486,6 +487,7 @@ function webdav_init(cfg_args) {
             case 'POST':
             // business as usual
                 next();
+                break;
 
             case 'OPTIONS':
                 return webdav_options(req, res);
