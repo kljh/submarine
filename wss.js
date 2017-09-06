@@ -95,6 +95,9 @@ const static_file_base_url = '/static';
 console.log('HTTP server exposes static files from '+static_file_path+' under '+static_file_base_url+' ...');
 app.use(static_file_base_url, express.static(static_file_path)); // script folder
 
+// webdav 
+app.use(require('./webdav').webdav_init({ http_port: http_port }));
+
 // dynamic request
 
 // body parsers (results available in req.body)
