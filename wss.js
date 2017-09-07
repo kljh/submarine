@@ -95,16 +95,20 @@ const static_file_base_url = '/static';
 console.log('HTTP server exposes static files from '+static_file_path+' under '+static_file_base_url+' ...');
 app.use(static_file_base_url, express.static(static_file_path)); // script folder
 
-// webdav 
-app.use(require('./webdav').webdav_init({ http_port: http_port }));
-
-// dynamic request
-
 // body parsers (results available in req.body)
-app.use(bodyParser.raw({ limit: '50mb' }));
+app.use(bodyParser.raw({ limit: '50mb', type: function(req) {
+    if (req.headers['content-type']=='application/octet-stream')
+        return true;
+    if (!req.headers['content-type'] && req.headers['content-length'] && req.method=="PUT")
+        return true; // Win7 WeDav client does not send any content-type when uploading
+    return false;
+}}));
 app.use(bodyParser.text())
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
+
+// webdav 
+app.use(require('./webdav').webdav_init({ http_port: http_port }));
 
 // authentication
 if (sspi_auth)

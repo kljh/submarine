@@ -32,7 +32,6 @@ function root_path() {
 
 function webdav_log_request(req) { 
     console.log("request headers:\n"+JSON.stringify(req.headers,null,4)+"\n");
-    console.log("request body #"+req.body_text.length+":\n"+req.body_text+"\n");
 }
 
 function webdav_options(req, res) {
@@ -47,6 +46,32 @@ function webdav_options(req, res) {
     console.log(JSON.stringify(opts,null,4));
     res.writeHead(200, opts);
     res.end();
+}
+
+
+function webdav_put(req, res) {
+    var url_path = unescape(url.parse(req.url).pathname);
+    var full_path = path.join(root_path(), url_path);
+    
+    var content_type = req.headers["content-type"];
+    var content_length = req.headers["content-length"];
+    try {
+        fs.writeFile(full_path, req.body, function(err) {
+            if (err) {
+                console.error(err);         
+                res.writeHead(500, {});
+                res.send({ error: err, url: url_path });
+                res.end();
+            } else {
+                res.end();
+            }
+        })
+    } catch(e) {
+        console.error(err)
+        res.writeHead(500, {});
+        res.send({ error: err, url: url_path });
+        res.end();
+    }
 }
 
 function webdav_mkcol(req, res) {
@@ -478,16 +503,18 @@ function webdav_init(cfg_args) {
     
     function webdav_handler(req, res, next) {
         if ([ 'HEAD', 'GET', 'PUT', 'POST' ].indexOf(req.method)==-1)
-            console.log("webdav", req.method, res.body || "(no body)" );
+            console.log("webdav", req.method, req.body || "(no body)" );
 
         switch (req.method) {
             case 'HEAD':
             case 'GET':
-            case 'PUT':
             case 'POST':
             // business as usual
                 next();
                 break;
+
+            case 'PUT':
+                return webdav_put(req, res);
 
             case 'OPTIONS':
                 return webdav_options(req, res);
