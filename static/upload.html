@@ -4,9 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>File Uploader - coligo.io</title>
-  <link href='https://fonts.googleapis.com/css?family=Raleway' rel='stylesheet' type='text/css'>
+  <title>File upload</title>
+  <!-- <script src="jquery.js"></script> -->
+  <script src="https://code.jquery.com/jquery-2.2.0.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+
+  <script src="upload-put.js"></script>
   <link href="upload.css" rel="stylesheet">
 </head>
 <body>
@@ -19,9 +23,10 @@
             <span class="glyphicon glyphicon-cloud-upload"></span>
             <h2>File Upload</h2>
             <div class="progress">
-              <div class="progress-bar" role="progressbar"></div>
+              <div class="progress-bar" role="progressbar" id="total-progress-bar"></div>
             </div>
             <button class="btn btn-lg upload-btn" type="button">Upload File</button>
+            <br/><br/>
           </div>
         </div>
       </div>
@@ -30,8 +35,6 @@
 
   <input id="upload-input" type="file" name="uploads[]" multiple="multiple"></br>
 
-  <script src="https://code.jquery.com/jquery-2.2.0.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
-  <script src="upload.js"></script>
+  <div id="log"></div>
 </body>
 </html>

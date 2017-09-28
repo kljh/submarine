@@ -1,11 +1,13 @@
 const url = require('url');
 const fs = require('fs');
 const path = require('path');
+//const auth = require('./basic-auth');
 //const cfg_file = require('./config.json');
 
 /*
 
-\\localhost@8080\DavWWWRoot\
+\\localhost@8085\DavWWWRoot\
+\\kljh.herokuapp.com@SSL\DavWWWRoot
 
 */
 
@@ -13,6 +15,7 @@ module.exports = {
     bDebug : false,
     webdav_init: webdav_init,
     webdav_options: webdav_options,
+    webdav_put: webdav_put,
     webdav_mkcol: webdav_mkcol,
     webdav_move: webdav_move,
     webdav_copy: webdav_copy,
@@ -55,19 +58,60 @@ function webdav_put(req, res) {
     
     var content_type = req.headers["content-type"];
     var content_length = req.headers["content-length"];
-    try {
-        fs.writeFile(full_path, req.body, function(err) {
-            if (err) {
-                console.error(err);         
+    var content_range = req.headers["content-range"] || req.headers["range"];
+    var content_range_start, content_range_end;
+    if (content_range) {
+        // Range: <unit>=<range-start>-<range-end>
+        // Content-Range: <unit> <range-start>-<range-end>/<size>
+        // Content-Range: <unit> <range-start>-<range-end>/*
+        // Content-Range: <unit> */<size>
+        var tmp = content_range.trim().split(/[ -\/=]+/);
+        if (tmp.length>=3 && tmp[0]=="bytes" && tmp[1]!="*") {
+            content_range_start = tmp[1]*1;
+            content_range_end = tmp[2]*1;
+            if (content_range_start==undefined || content_range_end==undefined || (content_range_end-content_range_start)!=content_length) {
                 res.writeHead(500, {});
-                res.send({ error: err, url: url_path });
-                res.end();
-            } else {
-                res.end();
+                res.end("Content-Range header ill-formated");
+                return;
             }
-        })
-    } catch(e) {
-        console.error(err)
+        }
+    }
+
+    try {
+        if (content_range_start) {
+            // fs.appendFile
+            fs.open(full_path, 'a', function (erro, f) { 
+                if (!erro) {
+                    fs.write(f, req.body, 0, content_length, content_range_start, function(errw) {
+                        if (!errw) {
+                            fs.close(f, function(errc) {
+                                if (erro || errw || errc) {
+                                    console.error(err);      
+                                    res.writeHead(500, {});
+                                    res.send({ error: err, url: url_path });
+                                    res.end();
+                                } else {
+                                    res.end();
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        } else {
+            fs.writeFile(full_path, req.body, function(err) {
+                if (err) {
+                    console.error(err);      
+                    res.writeHead(500, {});
+                    res.send({ error: err, url: url_path });
+                    res.end();
+                } else {
+                    res.end();
+                }
+            });
+        }
+    } catch(err) {
+        console.error(err);
         res.writeHead(500, {});
         res.send({ error: err, url: url_path });
         res.end();
@@ -502,17 +546,18 @@ function webdav_init(cfg_args) {
     console.log("HTTP WebDav under Win7: \\\\localhost@"+cfg_args.http_port+"\\DavWWWRoot")
     
     function webdav_handler(req, res, next) {
-        if ([ 'HEAD', 'GET', 'PUT', 'POST' ].indexOf(req.method)==-1)
+        if ([ 'HEAD', 'GET', 'POST' ].indexOf(req.method)!==-1)
+            return next();
+
+        if (req.method!=="PUT")
             console.log("webdav", req.method, req.body || "(no body)" );
 
-        switch (req.method) {
-            case 'HEAD':
-            case 'GET':
-            case 'POST':
-            // business as usual
-                next();
-                break;
+        // if ([ 'PUT', 'DELETE' ].indexOf(req.method)!==-1) {
+        //     var bAuth = auth.check_autorization(req, res);
+        //     if (!bAuth) return;
+        // }
 
+        switch (req.method) {
             case 'PUT':
                 return webdav_put(req, res);
 
