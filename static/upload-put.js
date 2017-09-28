@@ -19,7 +19,7 @@ $('#upload-input').on('change', function (){
 		total_size += file.size;
 		//info_msg(file.name+" "+file.webkitRelative+" "+file.size+" "+file.type+" "+new Date(file.lastModified).toISOString() ); //lastModifiedDate
 	}
-	info_msg("total_size: "+total_size);
+	info_msg("total size to upload: "+total_size);
 	
 	var nb_files = files.length;
 	var nb_queued = 0;
@@ -53,25 +53,22 @@ $('#upload-input').on('change', function (){
 				'background-image': 'none',
 				'background-color': 'orange'
 			});
-		}, function(e) {
+			info_msg("ERROR: "+e.message+" "+e);
+		}, function(bytes_up) {
 			// e.loaded / e.total
-			upload_file_update(i, file, e.loaded);
+			upload_file_update(i, file, bytes_up);
 		})
 	}
 
 	function upload_file_update(i, file, bytes_up) {
 		var now = new Date();
+
+		file.total_up = (file.total_up||0) + bytes_up;
+		total_up += bytes_up;
 		
-		var delta_t = now - (file.tprev || file.tqueue);
-		var delta_bytes = bytes_up - file.bytes_up;
-		file.tprev = now;
-		file.bytes_up = bytes_up;
-		
-		total_up += delta_bytes;
-		
-		var filePercentComplete = parseInt(bytes_up / file.size * 100) + '%';
+		var filePercentComplete = parseInt(file.total_up / file.size * 100) + '%';
 		var totalPercentComplete = parseInt(total_up / total_size * 100) + '%';
-		var fileSpeed = parseInt(delta_bytes / delta_t / 1000) +"kB/s";
+		var fileSpeed = parseInt(file.total_up / (now-file.tqueue) / 1000) +"kB/s";
 
 		// update the Bootstrap progress bar with the new percentage
 		$('#file-'+i+'-progress-bar').text(file.name + '  ' +fileSpeed);
@@ -110,7 +107,14 @@ function xhr_put_file(file, success, error, progress, opt_prms, opt_byte_from) {
 	}
 	function uploadFailed(e) { console.log("upload failed. "+e); error(e); }
 	function uploadCanceled(e) { console.log("upload canceled. "+e); error(e); }
-	function uploadProgress(e) { console.log("upload progress. loaded "+e.loaded+" / total "+e.total+". "+e); progress(e) }
+
+	var prev_up = 0;
+	function uploadProgress(e) { console.log("upload progress. loaded "+e.loaded+" / total "+e.total+". "+e); 
+		var new_up = e.loaded;
+		var bytes_up = new_up - prev_up;
+		progress(bytes_up);
+		prev_up = new_up;
+	}
 	
 	xhr.open('PUT', root_url+file.name, true); // MUST BE LAST LINE BEFORE YOU SEND (true for async)
 	xhr.setRequestHeader("Content-Type", "application/octet-stream");
@@ -127,8 +131,8 @@ function xhr_put_file(file, success, error, progress, opt_prms, opt_byte_from) {
 	reader.readAsArrayBuffer(blob);
 	
 	function file_reader_error(evt) { 
-		info_msg(evt.target.error); 
-		error(evt); 
+		info_msg("file_reader_error: "+evt.target.error.code+" "+evt.target.error); 
+		error(evt.target.error); 
 	};
 	function file_reader_done(evt) { 
 		xhr.send(reader.result);
