@@ -4,7 +4,7 @@ $('.upload-btn').on('click', function () {
 	$('#upload-input').click();
 });
 
-$('#upload-input').on('change', function (){
+$('#upload-input').on('change', function () { try{
 	$('.file-progress').remove();
 	$('.progress-bar').text('');
 	$('.progress-bar').width('0%');
@@ -76,6 +76,11 @@ $('#upload-input').on('change', function (){
 		
 		$('#total-progress-bar').text(nb_done + ' / ' + nb_files + ' file(s)');
 		$('#total-progress-bar').width(totalPercentComplete);
+	}
+	} catch (e) {
+		info_msg("UNEXPECTED ERROR: "+e);
+		info_msg(e.message);
+		info_msg(e.stack);
 	}
 });
 
