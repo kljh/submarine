@@ -1,6 +1,6 @@
 
 
-function host_info_plain(request) {
+function host_info_plain(request, session_id) {
     return {
         version: 0.2,
         username: process.env.USERNAME, 
@@ -10,9 +10,9 @@ function host_info_plain(request) {
 }
 
 
-function host_info_promise(request) {
+function host_info_promise(request, session_id) {
     return new Promise(function (resolve, reject) {
-        resolve( {
+        resolve( { 
             version: 0.2,
             username: process.env.USERNAME, 
             hostname: process.env.COMPUTERNAME,
@@ -21,11 +21,42 @@ function host_info_promise(request) {
     });
 }
 
-async function host_info_async(request) {
-	var tmp = await host_info_promise(request);
-	var tmpx = await global_vars.xl_rpc_promise("XlSet", "abc", 456);
-	tmp.x = tmpx;
-	return tmp;
+async function host_info_async(request, session_id) {
+    var tmp = await host_info_promise(request, session_id);
+    
+    // call back to Excel (manualy)
+	try {
+        var tmpxs = await global_vars.xl_rpc_promise(session_id, "XlSet", "abc", 456);
+	    tmp.xs = tmpxs;
+    } catch(e) {
+        console.error("error XlSet abc", e.message||e);
+        tmp.xserr = e.message;
+        tmp.xsstack = e.stack;
+    }
+    
+    // call back to Excel (creating stub as needed, ONCE for all)
+    console.log("stub inverse...")
+    var XlInverse = await global_vars.xl_rpc_stub("XlInverse", session_id);
+    try {
+        console.log("invoke inverse...")
+        tmp.xi = await XlInverse([[1,2],[13,17]]);
+    } catch(e) {
+        console.error("error inverse", e.message);
+        tmp.xierr = e.message;
+        tmp.xistack = e.stack;
+    }
+    
+    // call back to Excel (creating all stub at once)
+    var xl = await global_vars.xl_rpc_stubs(session_id);
+    try {
+        tmp.xl = Object.keys(xl).length + " functions exported";
+        tmp.z = await xl.XlSet("def", 789);
+    } catch(e) {
+        tmp.zerr = e.message;
+        tmp.zstack = e.stack;
+    }
+
+    return tmp;
 }
 
 var host_info = host_info_async;
