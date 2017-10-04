@@ -23,9 +23,10 @@ function rscript_install(app) {
         })
     });
 
-    // xl_rpc_promise needs to have global scoped in order to be used in functions stubs, e.g. new Function("args", "body");
+    // xl_rpc_promise needs to have global scoped in order to be used in functions stubs, e.g. new Function("args", "body calling xl_rpc_promise");
     global.xl_rpc_promise = xl_rpc_promise;
 
+    global.top_left = top_left;
 }
 
 
@@ -101,11 +102,11 @@ async function xl_rpc_stubs(session_id) {
 function xl_rpc_promise(session_id, xlfct, arg0, arg1, arg2, arg3) {
     var cmd = "xl_udf";
     var args = Array.from(arguments);
-    var args = [...arguments];
-    args.shift(); args.shift(); // !! two fixed arguments
+    var args_maybe_promises = [...arguments];
+    args_maybe_promises.shift(); args_maybe_promises.shift(); // !! two fixed arguments
 
-    return Promise.resolve()
-    .then(function () {
+    return Promise.all(args_maybe_promises)
+    .then(function (args) {
         var http_url_get = "http://localhost:9707/?cmd=xl_udf&udf_name=XlSet&arg0=abc&arg1=123";
         var http_url = "http://127.0.0.1:9707/";
 
@@ -133,7 +134,7 @@ function xl_rpc_promise(session_id, xlfct, arg0, arg1, arg2, arg3) {
 		}
     })
     .then(function (reply_body) {
-        console.error("xl_rpc_promise: xlfct:"+xlfct+" http  body:"+reply_body.substr(0,50));
+        //console.error("xl_rpc_promise: xlfct:"+xlfct+" http  body:"+reply_body.substr(0,50));
 
         var reply = reply_body;
         if (reply.substr) try{

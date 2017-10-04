@@ -24,9 +24,9 @@ function host_info_promise(request, session_id) {
 async function host_info_async(request, session_id) {
     var tmp = await host_info_promise(request, session_id);
     
-    // call back to Excel (manualy)
+    // call back to Excel (manually)
 	try {
-        var tmpxs = await global_vars.xl_rpc_promise(session_id, "XlSet", "abc", 456);
+        var tmpxs = top_left(await global_vars.xl_rpc_promise(session_id, "XlSet", "abc", 456));
 	    tmp.xs = tmpxs;
     } catch(e) {
         console.error("error XlSet abc", e.message||e);
