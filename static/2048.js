@@ -49,23 +49,63 @@ function init() {
             add_number_randomly(grid);
             setTimeout(() => {
                 render(grid);
-                if (autoplay)
-                    swipe_animate(auto_select_next_swipe(grid, swipe_fcts));
+                if (autoplay) {
+                    var next_swipe = auto_select_next_swipe(grid, swipe_fcts);
+                    if (next_swipe)
+                        swipe_animate(next_swipe);
+                    else
+                        alert("Game over");
+                }
             }, autoplay?10:200);(grid);
         }
     }
 
     const n=4;
     var autoplay = false;
-    var grid = [ 
-        [ "", "", "", "" ],
-        [ "", "", "", "" ],
-        [ "", "", "", "" ],
-        [ "", "", "", "" ]];
+
+    function make_empty_grid() {
+        return [ 
+            [ "", "", "", "" ],
+            [ "", "", "", "" ],
+            [ "", "", "", "" ],
+            [ "", "", "", "" ]];
+    }
+    var grid = make_empty_grid();
         
     add_number_randomly(grid);
     add_number_randomly(grid);    
     render(grid);
+
+    autoplay_stats();
+    function autoplay_stats() {
+        var t0 = new Date();
+        var nb_games = 100;
+        var scores = [];
+        var total = 0;
+        for (var i=0; i<nb_games; i++) {
+            var grid = make_empty_grid();
+            add_number_randomly(grid);
+            add_number_randomly(grid);    
+            for (var j=0; j<500; j++) {
+                var next_swipe = auto_select_next_swipe(grid, swipe_fcts);
+                var next_grid = next_swipe ? next_swipe(grid) : undefined;
+                if (next_grid) {
+                    grid = next_grid;
+                    add_number_randomly(grid);    
+                } else {
+                    var score = calculate_score(grid);
+                    scores.push(score);
+                    total += score;
+                    break; // game over
+                }
+            }
+        }
+        nb_games = scores.length;
+        var t1 = new Date();
+        
+        var el = document.getElementById('autoplay_stats');
+        el.innerText = "autoplay_stats on "+nb_games+" games: average score "+Math.round(total/nb_games);
+    }
 
     function render(grid) {
         var el = document.getElementById('score');

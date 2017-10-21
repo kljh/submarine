@@ -6,5 +6,6 @@ function auto_select_next_swipe(grid, swipe_fcts) {
     for (var swipe_fct of shuffled_swipe_fcts)
         if (swipe_fct(grid)) 
             return swipe_fct;
-    alert("Game over");
+    
+    return undefined;
 }
