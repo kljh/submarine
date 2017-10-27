@@ -3,6 +3,7 @@
 console.log('Loading modules...')
 const cfg = require('./config.json');
 const path = require('path');
+const os = require('os');
 const fs = require('fs');
 const http = require('http');
 const https = require('https');
@@ -64,6 +65,17 @@ winston.add(winston.transports.logrotate, {
         compress: false }); */
 winston.add(winston.transports.File, { filename: log_folder+"/wss-"+(new Date()).toISOString().substr(0,10)+".log" });
 winston.log('info', 'WSS START');
+
+
+const ifaces = os.networkInterfaces();
+Object.keys(ifaces).forEach(function (ifname) {
+    ifaces[ifname].forEach(function (iface) {
+        // skip over internal (i.e. 127.0.0.1) and non-ipv4 addresses
+        if (iface.family !== 'IPv4' || iface.internal !== false)
+            return;
+        console.log("IPv4 Interface", ifname, iface.address);
+    });
+});
 
 
 const http_port = process.env['PORT'] || 8085;
@@ -191,6 +203,24 @@ app.get('/whoami', function (req, res) {
 });
 
 
+function whereami(req) {
+    var me = {
+        proxy_aware: {
+            forwarded: req.headers["Forwarded"],
+            remoteAddress: req.headers["X-Forwarded-For"],
+            remotePort: req.headers["X-Forwarded-Port"],
+        },
+        without_proxy: {
+            remoteAddress: req.connection.remoteAddress,
+            remotePort: req.connection.remotePort,
+        }
+    };
+    return me;
+}       
+app.get('/whereami', function (req, res) {
+    res.send(whereami(req));
+});
+
 app.get('/', function (req, res) {
     if (!req.session || !req.session.info)
         res.redirect('/static/login.html');
@@ -245,6 +275,7 @@ app.get('/uploads/:filename', function(req, res) {
 });
 
 const sqlite_app = require('./sqlite.js').sqlite_install(app); 
+const rscript_app = require('./rscript.js').install(app); 
 
 console.log('WebSocket server starting ...');
 const wss = new WebSocket.Server({ server: server });

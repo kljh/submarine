@@ -16,6 +16,7 @@ function init() {
 
         var swipe_fct = undefined;
         switch (e.code) {
+            case "Space":
             case "KeyP":
                 document.getElementById('autoplay').click();
                 break;
@@ -50,7 +51,7 @@ function init() {
             setTimeout(() => {
                 render(grid);
                 if (autoplay) {
-                    var next_swipe = auto_select_next_swipe(grid, swipe_fcts);
+                    var next_swipe = auto_select_next_swipe(grid, swipe_fcts, calculate_score);
                     if (next_swipe)
                         swipe_animate(next_swipe);
                     else
@@ -79,7 +80,7 @@ function init() {
     autoplay_stats();
     function autoplay_stats() {
         var t0 = new Date();
-        var nb_games = 100;
+        var nb_games = 250;
         var scores = [];
         var total = 0;
         for (var i=0; i<nb_games; i++) {
@@ -87,7 +88,7 @@ function init() {
             add_number_randomly(grid);
             add_number_randomly(grid);    
             for (var j=0; j<500; j++) {
-                var next_swipe = auto_select_next_swipe(grid, swipe_fcts);
+                var next_swipe = auto_select_next_swipe(grid, swipe_fcts, calculate_score);
                 var next_grid = next_swipe ? next_swipe(grid) : undefined;
                 if (next_grid) {
                     grid = next_grid;
@@ -208,6 +209,8 @@ function init() {
 
     var score_map;
     function calculate_score(grid) {
+        if (!grid) return;
+        
         if (!score_map) {
             score_map = { "2": 0 };
             for (var v=2; v<8192; v*=2) 

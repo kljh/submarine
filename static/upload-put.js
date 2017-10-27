@@ -19,7 +19,7 @@ $('#upload-input').on('change', function () { try{
 		total_size += file.size;
 		//info_msg(file.name+" "+file.webkitRelative+" "+file.size+" "+file.type+" "+new Date(file.lastModified).toISOString() ); //lastModifiedDate
 	}
-	info_msg("total size to upload: "+total_size);
+	info_msg("total size to upload: "+bytesToSize(total_size));
 	
 	var nb_files = files.length;
 	var nb_queued = 0;
@@ -41,12 +41,14 @@ $('#upload-input').on('change', function () { try{
 		file.bytes_up = 0;
 
 		xhr_put_file(file, function() { 
+			// On Success
 			nb_done++;
 			//$('#file-'+i+'-progress-bar').text(file.name+" DONE");
 			$('#total-progress-bar').text(nb_done + ' / ' + nb_files + ' file(s)');
 			if (nb_queued<nb_files)
 				upload_file(nb_queued, files[nb_queued]);
 		}, function(e) { 
+			// On Error
 			$('#file-'+i+'-progress-bar').text(file.name+" ERROR");
 			$('#file-'+i+'-progress-bar').width("100%");
 			$('#file-'+i+'-progress-bar').css({
@@ -55,6 +57,7 @@ $('#upload-input').on('change', function () { try{
 			});
 			info_msg("ERROR: "+e.message+" "+e);
 		}, function(bytes_up) {
+			// On Progress
 			// e.loaded / e.total
 			upload_file_update(i, file, bytes_up);
 		})
@@ -68,7 +71,7 @@ $('#upload-input').on('change', function () { try{
 		
 		var filePercentComplete = parseInt(file.total_up / file.size * 100) + '%';
 		var totalPercentComplete = parseInt(total_up / total_size * 100) + '%';
-		var fileSpeed = parseInt(file.total_up / (now-file.tqueue) / 1000) +"kB/s";
+		var fileSpeed = bytesToSize(file.total_up / (now-file.tqueue) * 1000) +"/s"; // Bytes/ms are KB/s
 
 		// update the Bootstrap progress bar with the new percentage
 		$('#file-'+i+'-progress-bar').text(file.name + '  ' +fileSpeed);
@@ -142,6 +145,13 @@ function xhr_put_file(file, success, error, progress, opt_prms, opt_byte_from) {
 	function file_reader_done(evt) { 
 		xhr.send(reader.result);
 	};
+}
+
+function bytesToSize(bytes) {
+	var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+	if (bytes == 0) return '0 Byte';
+	var i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
+	return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
 }
 
 function info_msg(msg) {

@@ -67,3 +67,8 @@ h2 {
     width: 450px;
   }
 }
+
+/* Bootstrap progress-bar background color */
+.progress {
+  background-color: #839BC7;
+}
