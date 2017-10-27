@@ -275,7 +275,7 @@ app.get('/uploads/:filename', function(req, res) {
 });
 
 const sqlite_app = require('./sqlite.js').sqlite_install(app); 
-const rscript_app = require('./rscript.js').install(app); 
+//const rscript_app = require('./rscript.js').install(app); // uses async/await
 
 console.log('WebSocket server starting ...');
 const wss = new WebSocket.Server({ server: server });
