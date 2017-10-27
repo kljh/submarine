@@ -4,7 +4,7 @@
 */
 
 const fs = require("fs");
-const requestify = require('requestify');
+//const requestify = require('requestify');
 
 const global_vars = { fs: fs, xl_rpc_promise: xl_rpc_promise, xl_rpc_stub: xl_rpc_stub, xl_rpc_stubs: xl_rpc_stubs };
 
