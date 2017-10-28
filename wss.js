@@ -1,3 +1,5 @@
+'use strict';
+
 // https://github.com/websockets/ws
 
 console.log('Loading modules...')

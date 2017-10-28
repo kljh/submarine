@@ -1,3 +1,5 @@
+'use strict';
+
 const cfg = require('./config.json');
 
 // authenticates incoming requests through LDAP.

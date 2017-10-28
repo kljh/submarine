@@ -1,3 +1,5 @@
+'use strict';
+
 $(function () {
 
 $('.upload-btn').on('click', function () {

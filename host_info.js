@@ -1,4 +1,4 @@
-
+'use strict';
 
 function host_info_plain(request, session_id) {
     return {

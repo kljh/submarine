@@ -1,3 +1,5 @@
+'use strict';
+
 console.log('WebSocket chat bot loading modules...')
 const WebSocket = require('ws');
 

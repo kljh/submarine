@@ -1,3 +1,5 @@
+'use strict';
+
 const requestify = require('requestify'); 
 const request = require('request');
 

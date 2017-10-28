@@ -1,3 +1,5 @@
+'use strict';
+
 function auto_select_next_swipe(grid, swipe_fcts, calculate_score) {
     var p = Math.ceil(Math.random()*4);
 

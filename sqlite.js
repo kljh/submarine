@@ -1,3 +1,5 @@
+'use strict';
+
 const sqlite3 = require('sqlite3'); // .verbose();
 // Install with : const sqlite_app = require('./sqlite.js').sqlite_install(app); 
 // To do?? : add a busy handler

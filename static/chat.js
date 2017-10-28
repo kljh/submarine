@@ -1,3 +1,7 @@
+'use strict';
+
+var id, topic, queue_tx, queue_rx, newBotMessage, newMessageOut;
+
 $(function() {
 
 var debug = false; 
@@ -55,7 +59,7 @@ var conversation = document.querySelector('.conversation-container');
 
 form.addEventListener('submit', newMessage);
 
-newBotMessage = function(text, id) {
+/*var*/ newBotMessage = function(text, id) {
     var message = buildMessage(text, { rcv: true, id: id });
     conversation.appendChild(message);
     animateMessage(message);
@@ -73,7 +77,7 @@ function newMessage(e) {
     input.value = '';
 }
 
-newMessageOut = function (txt) {
+/*var*/ newMessageOut = function (txt) {
 
     if (txt) {
         var message = buildMessage(txt);

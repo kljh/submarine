@@ -1,3 +1,5 @@
+'use strict';
+
 /*
 
 =XlHttpRequest("http://localhost:8085/rscript","{ ""request_name"" : ""host_info"" }")

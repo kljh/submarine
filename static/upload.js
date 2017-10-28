@@ -1,3 +1,5 @@
+'use strict';
+
 $('.upload-btn').on('click', function (){
     $('#upload-input').click();
     $('.progress-bar').text('0%');
