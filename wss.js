@@ -90,6 +90,8 @@ var app = express();
 var server = http.createServer(app);
 server.listen(http_port, function () { console.log('HTTP server started on port: %s', http_port); });
 
+app.set('trust proxy', true);
+
 // Enabling all CORS request (pre-flight, etc.)
 //   - https://github.com/expressjs/cors
 app.use(require('cors')());
@@ -206,9 +208,10 @@ app.get('/whoami', function (req, res) {
 function whereami(req) {
     var me = {
         proxy_aware: {
-            forwarded: req.headers["Forwarded"],
-            remoteAddress: req.headers["X-Forwarded-For"],
-            remotePort: req.headers["X-Forwarded-Port"],
+            forwarded: req.headers["forwarded"],
+            remoteAddress: req.headers["x-forwarded-for"],
+            remotePort: req.headers["x-forwarded-port"],
+            headers : req.headers            
         },
         without_proxy: {
             remoteAddress: req.connection.remoteAddress,
