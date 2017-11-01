@@ -2,19 +2,35 @@
 
 /*
 
-=XlHttpRequest("http://localhost:8085/rscript","{ ""request_name"" : ""host_info"" }")
+Register in http server with:
+  require('./rscript.js').rscript_install(app);
+
+Use from Excel with Vision.XLL :
+  =XlHttpRequest("http://localhost:8085/rscript","{ ""request_name"": ""host_info"" }", 10)
+  =XlHttpRequest("http://localhost:8085/rscript","{ ""request_name"": ""shibuya"" }", 20)
+or from Excel with XLA
+  =HttpRequest("http://localhost:8085/rscript","{ ""request_name"" : ""host_info"" }")
+  =HttpRequest("http://localhost:8085/rscript","{ ""request_name"" : ""shibuya"" }")
 */
 
 const fs = require("fs");
-//const requestify = require('requestify');
+const path = require("path");
+const script_root_path = __dirname;
 
 const global_vars = { fs: fs, xl_rpc_promise: xl_rpc_promise, xl_rpc_stub: xl_rpc_stub, xl_rpc_stubs: xl_rpc_stubs };
+
+var g_xl_rpc_promise_res;
+var g_xl_rpc_promise_functions;
 
 function rscript_install(app) {
 
     // http://localhost:8085/rscript?request={"request_name":"host_info"}
 
     app.use('/rscript', function (req, res) {
+        console.log("rscript begin");
+        g_xl_rpc_promise_res = res;
+        g_xl_rpc_promise_functions = undefined;
+
         var request = req.method=="GET" ? req.query : req.body;
 
         rscript(request, req.query)
@@ -23,11 +39,27 @@ function rscript_install(app) {
                 data = ""+data;
             if (typeof data == "object")
                 data = JSON.stringify(data, null, 4);
-            res.send(data);
+
+            var used_res = g_xl_rpc_promise_res || res;
+            g_xl_rpc_promise_res = undefined;
+            g_xl_rpc_promise_functions = undefined;
+            used_res.send(data);            
         })
         .catch(function(err) {
-            res.send({ error: err.message || err, stack: err.stack });
+            var used_res = g_xl_rpc_promise_res || res;
+            g_xl_rpc_promise_res = undefined;
+            g_xl_rpc_promise_functions = undefined;
+            used_res.send(JSON.stringify({ error: err.message || err, stack: err.stack }, null, 4));            
         })
+    });
+    app.use('/rscript_return', function (req, res) {
+        var request = req.method=="GET" ? req.query : req.body;
+        var xl_rpc_promise_functions = g_xl_rpc_promise_functions;
+
+        g_xl_rpc_promise_res = res;
+        g_xl_rpc_promise_functions = undefined;
+
+        xl_rpc_promise_bounce_back(request, xl_rpc_promise_functions);
     });
 
     // xl_rpc_promise needs to have global scoped in order to be used in functions stubs, e.g. new Function("args", "body calling xl_rpc_promise");
@@ -52,7 +84,7 @@ function rscript(request, opt_prms) {
         var request_src = request_name.split(".").shift();
         var request_txt = request_name.split(".").pop();
 
-        var uri = request_src+".js";
+        var uri = path.join(script_root_path, "scripts", request_src+".js");
 
         return readFilePromise(uri, "utf8")
         .then(function (data) {
@@ -67,46 +99,134 @@ function rscript(request, opt_prms) {
 }
 
 var xl_rpc_stub_all_functions;
-async function xl_rpc_stub_retrieve_all_functions(session_id) {
+/*async*/ 
+function xl_rpc_stub_retrieve_all_functions(session_id) {
     if (!xl_rpc_stub_all_functions)
     {
-        try {
+		var listing_fct = "XlRegisteredFunctions";
+		var listing_filter = undefined;
+		
+        /*
+        // With ASYNC/AWAIT
+		try {
             var tmpa = await xl_rpc_promise(session_id, "XlRegisteredFunctions");
-            var tmpb = array2d_to_objectarray(tmpa);
+        */
+
+		// Without ASYNC/AWAIT
+		return xl_rpc_promise(session_id, listing_fct, listing_filter)
+        .then((tmpa) => {
+		
+		    var tmpb = array2d_to_objectarray(tmpa);
             var tmpo = {};
             for (var i=0; i<tmpb.length; i++) {
                 var fct_name = tmpb[i].fct || tmpb[i].name || tmpb[i].Name || tmpa[i][0];
                 tmpo[fct_name] = tmpb[i];
             }
             xl_rpc_stub_all_functions = tmpo;
-        } catch (e) {
+		// } catch (e) {
+		}).catch((e) => {
             console.error("xl_rpc_stub_retrieve_all_functions", e);
-        }
+            throw({ error: e, from: "xl_rpc_stub_retrieve_all_functions" });
+        // }
+        });
+
     }
-    return true;
+    return Promise.resolve();
 }
-async function xl_rpc_stub(fct_name, session_id) {
-    var bDone = await xl_rpc_stub_retrieve_all_functions(session_id);
+/*async*/ 
+function xl_rpc_stub(fct_name, session_id) {
+    //var bDone = await xl_rpc_stub_retrieve_all_functions(session_id);
+    return xl_rpc_stub_retrieve_all_functions(session_id)
+    .then(() => {
 
-    var fct = xl_rpc_stub_all_functions[fct_name];
-    if (!fct) throw new Error("xl_rpc_stub: unknown function '"+fct_name+"'.");
-
-    var fct_args = fct.args || fct.arguments || fct.Args || fct.Arguments;
-    var fct_body = 'return xl_rpc_promise('+session_id+', "'+fct_name+'", '+fct_args+');'
-    var fct_stub = new Function(fct_args, fct_body);
-    //var fct_stub = xl_rpc_stub_all_stubs[fct_name] = new AsyncFunction(fct_args, fct_body);
-
-    return fct_stub;
+        var fct = xl_rpc_stub_all_functions[fct_name];
+        if (!fct) throw new Error("xl_rpc_stub: unknown function '"+fct_name+"'.");
+        
+        var fct_args = ( fct.args || fct.arguments || fct.Args || fct.Arguments ).replace(/[\[\]' ]+/g,'');
+        var fct_body = 'return xl_rpc_promise('+session_id+', "'+fct_name+'", '+fct_args+');'
+        var fct_stub = new Function(fct_args, fct_body);
+        //var fct_stub = xl_rpc_stub_all_stubs[fct_name] = new AsyncFunction(fct_args, fct_body);
+	
+	    return fct_stub;
+	});
 }
-async function xl_rpc_stubs(session_id) {
-    var bDone = await xl_rpc_stub_retrieve_all_functions();
+/*async*/ 
+function xl_rpc_stubs(session_id) {
+    /*
+	var bDone = await xl_rpc_stub_retrieve_all_functions();
     var stubs = {};
     for (var fct_name in xl_rpc_stub_all_functions)
         stubs[fct_name] = await xl_rpc_stub(fct_name, session_id);
     return stubs;
+	*/
+
+    return xl_rpc_stub_retrieve_all_functions(session_id)
+    .then(() => {
+        var fct_names = [];
+        var stub_promises_array = [];
+        var stub_promises_dict = {};
+        for (var fct_name in xl_rpc_stub_all_functions) {
+            stub_promises_dict[fct_name] = xl_rpc_stub(fct_name, session_id);
+            stub_promises_array.push(stub_promises_dict[fct_name]);
+            fct_names.push(fct_name);
+        }
+
+        return Promise.all(stub_promises_array)
+        .then((stub_array) => { 
+            var stub_dict = {};
+            for (var i=0; i<fct_names.length; i++) {
+                var fct_name = fct_names[i];
+                var fct_stub = stub_array[i];
+                stub_dict[fct_name] = fct_stub;
+            }
+            return Promise.resolve(stub_dict); 
+        });
+    });
 }
 
 function xl_rpc_promise(session_id, xlfct, arg0, arg1, arg2, arg3) {
+	//return xl_rpc_promise_httpd(session_id, xlfct, arg0, arg1, arg2, arg3);
+	return xl_rpc_promise_bounce(session_id, xlfct, arg0, arg1, arg2, arg3);
+}
+
+function xl_rpc_promise_bounce(session_id, xlfct, arg0, arg1, arg2, arg3) {
+    console.log("xl_rpc_promise_bounce("+xlfct+") begin");
+    var args = Array.from(arguments);
+    var args_maybe_promises = [...arguments];
+    args_maybe_promises.shift(); args_maybe_promises.shift(); // !! two fixed arguments
+    while (args_maybe_promises.length && args_maybe_promises[args_maybe_promises.length-1]===undefined) args_maybe_promises.pop(); // trailing missing args
+    
+    return Promise.all(args_maybe_promises)
+    .then(function (args) {
+        console.log("xl_rpc_promise_bounce("+xlfct+") args "+JSON.stringify(args));
+        
+        var data = "!" + (new Date()).toISOString() + "\n"
+            + xlfct + "\n"
+            + JSON.stringify(args, null, 4);
+
+        console.log("xl_rpc_promise_bounce("+xlfct+") sending data "+data);
+        g_xl_rpc_promise_res.send(data);
+
+        return new Promise(function(resolve, reject) {
+            // Do nothing against we are called again with result
+            g_xl_rpc_promise_functions = { resolve: resolve, reject: reject };
+        });
+    });
+}
+function xl_rpc_promise_bounce_back(request, xl_rpc_promise_functions) {
+    console.log("xl_rpc_promise_bounce_back(...) result received"+JSON.stringify(request));
+
+    if (!xl_rpc_promise_functions) {
+        var msg = "xl_rpc_promise_bounce_back received results but xl_rpc_promise_functions is undefined.\n" + "request =  "+JSON.stringify(request,null,4);
+        throw new Error(msg);
+    } else if (request && request.result) {
+        xl_rpc_promise_functions.resolve(request.result);
+    } else {
+        xl_rpc_promise_functions.reject({ "error": "no result in message received", "msg": request });
+    }
+}
+
+function xl_rpc_promise_httpd(session_id, xlfct, arg0, arg1, arg2, arg3) {
     var cmd = "xl_udf";
     var args = Array.from(arguments);
     var args_maybe_promises = [...arguments];
