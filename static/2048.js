@@ -9,9 +9,17 @@ function init() {
 
     
     var body = document.getElementById('body');
-    body.addEventListener('touchend', function(e) {
-        e.preventDefault()
-    }, false);
+    var hammerOpts = undefined;
+    var hammertime = new Hammer(body, hammerOpts);
+    //hammertime.get('pinch').set({ enable: true });      // disabled by default
+    //hammertime.get('rotate').set({ enable: true });     // disabled by default
+    //hammertime.get('pan').set({ direction: Hammer.DIRECTION_VERTICAL });    // horizontal only by default
+    hammertime.get('swipe').set({ direction: Hammer.DIRECTION_ALL });       // horizontal only by default
+    hammertime.on('swipe', function(e) { console.log(e); });
+    hammertime.on('swipeleft', function(e) { swipe_animate(swipe_left); });
+    hammertime.on('swiperight', function(e) { swipe_animate(swipe_right); });
+    hammertime.on('swipedown', function(e) { swipe_animate(swipe_down); });
+    hammertime.on('swipeup', function(e) { swipe_animate(swipe_up); });
 
     document.addEventListener('keyup', function(e) {
         console.log(e);

@@ -1,0 +1,18 @@
+CACHE MANIFEST
+# This file MUST be served with MIME type : text/cache-manifest
+# and it MUST be reference from the <html manifest="2048.appcache"> tag
+
+# ----- VERSION 0.1 - MUST BE UPDATE TO FORCE CACHE REFRESH -----
+
+# files in CACHE section   MUST be cached 
+# files in NETWORK section MUSTN'T be cached 
+
+CACHE:
+
+2048.html
+hammer.min.js
+2048.js
+2048a.js
+
+NETWORK:
+
