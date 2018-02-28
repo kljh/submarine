@@ -242,4 +242,10 @@ function init() {
                     score += score_map[grid[i][j]];
         return score;
     }
+
+    window.addEventListener("beforeunload", function (e) {
+        var confirmationMessage = "\o/ leaving?";  
+        e.returnValue = confirmationMessage;     // Gecko, Trident, Chrome 34+
+        return confirmationMessage;              // Gecko, WebKit, Chrome <34
+    });
 }
