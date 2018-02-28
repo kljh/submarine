@@ -3,8 +3,11 @@
 function init() {
 
     var el = document.getElementById('autoplay');
+    var autoplay = localStorage['autoplay']=="true"
+    el.checked = autoplay
     el.addEventListener('change', function(e) {
         autoplay = e.target.checked;
+        localStorage['autoplay'] = autoplay;
     }, false);
 
     
@@ -72,8 +75,7 @@ function init() {
     }
 
     const n=4;
-    var autoplay = false;
-
+    
     function make_empty_grid() {
         return [ 
             [ "", "", "", "" ],
@@ -87,7 +89,13 @@ function init() {
     add_number_randomly(grid);    
     render(grid);
 
-    autoplay_stats();
+    if (autoplay) {
+        var next_swipe = auto_select_next_swipe(grid, swipe_fcts, calculate_score);
+        if (next_swipe)
+            swipe_animate(next_swipe);
+    }
+    
+    //autoplay_stats();
     function autoplay_stats() {
         var t0 = new Date();
         var nb_games = 250;
@@ -222,7 +230,7 @@ function init() {
         if (!grid) return;
         
         if (!score_map) {
-            score_map = { "2": 0 };
+            score_map = { "-1": 0, "1": 0, "2": 0 };
             for (var v=2; v<8192; v*=2) 
                 score_map[2*v] = 2 * (v+score_map[v]);
         }
