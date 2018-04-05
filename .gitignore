@@ -9,3 +9,5 @@ jquery.js
 credentials.json
 logs/
 uploads/
+*.bak
+**/.*
