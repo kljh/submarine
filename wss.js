@@ -106,10 +106,13 @@ app.use(function(req, res, next) {
 }); */
 
 // static files 
-const static_file_path = path.join(__dirname, 'static');
-const static_file_base_url = '/static';
-console.log('HTTP server exposes static files from '+static_file_path+' under '+static_file_base_url+' ...');
-app.use(static_file_base_url, express.static(static_file_path)); // script folder
+console.log('HTTP server exposes static files...');
+app.use('/static', express.static(path.join(__dirname, 'static')));
+app.use('/root', express.static(__dirname));
+
+// link to other projects
+app.use('/grid', express.static(path.join(__dirname, '..\\grid'))); 
+app.use('/mindthegap', express.static(path.join(__dirname, '..\\mindthegap'))); 
 
 // body parsers (results available in req.body)
 app.use(bodyParser.raw({ limit: '50mb', type: function(req) {
@@ -178,6 +181,7 @@ app.get('/logout', function (req, res) {
 
 require("./github-oauth.js")(app);
 require("./dropbox-oauth.js")(app);
+require("./code-contest-app.js")(app);
 
 function whoami(req) {
     if (!req.session || !req.session.info)

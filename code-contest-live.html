@@ -1,0 +1,66 @@
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Code Contest Live</title>
+<!--
+<link type="text/css" rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+<script src="tinysort.js"></script>
+<script src="dist/tinysort.charorder.js"></script>
+-->
+<style>
+ul#xanim li {
+    transition: top 500ms;
+    -webkit-transition: top 500ms;
+}
+</style>
+</head>
+<body>
+<div>
+	<div class="example" style="position: absolute; top: 120px;">
+		<ul id="xanim" style="height: 179px;">
+			<li style="position: absolute; top: 0px;">Sophia</li>
+			<li style="position: absolute; top: 22px;">France</li>
+			<li style="position: absolute; top: 44px;">Louisiane</li>
+			<li style="position: absolute; top: 66px;">Marine</li>
+			<li style="position: absolute; top: 88px;">Valence</li>
+			<li style="position: absolute; top: 110px;">Virginie</li>
+			<li style="position: absolute; top: 132px;">Boreale</li>
+			<li style="position: absolute; top: 154px;">Vendredi</li>
+		</ul>
+	</div>
+</div>
+</body>
+<script>
+var ul = document.getElementById('xanim'),
+	lis = ul.querySelectorAll('li'),
+	liHeight = lis[0].offsetHeight;
+	
+ul.style.height = ul.offsetHeight+'px';
+for (var i= 0,l=lis.length;i<l;i++) {
+    var li = lis[i];
+    li.style.position = 'absolute';
+    li.style.top = i*liHeight+'px';
+}
+
+function shuffle(v) {
+	var n = v.length;
+	for (var i=0; i<n; i++) {
+		var p = Math.floor(n*Math.random());
+		var vtmp = v[i];
+		v[i] = v[p];
+		v[p] = vtmp;
+	}
+	return v;
+}
+
+var test = ul.querySelectorAll('ul#xanim>li');
+var pos = shuffle(new Array(test.length).fill(null).map((x, i) =>i))
+
+test.forEach(function(elm,i){
+    setTimeout((function(elm,i){
+        elm.style.top = pos[i]*liHeight+'px';
+    }).bind(null,elm,i),40);
+});
+</script>
+</html>
