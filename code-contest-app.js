@@ -4,10 +4,10 @@ const url = require('url');
 const fs = require('fs');
 const path = require('path');
 const sqlite = require('./sqlite')
-const db = "code-contest.sqlite"
+const db = ".code-contest/db.sqlite"
 
 module.exports = function(app) {
-    console.log("Code Contest handler")
+    console.log("Code Contest handler installed.")
 
     app.use('/code-contest-register', code_contest_register);
     app.use('/code-contest-get-input-data', code_contest_get_input_data);
@@ -23,8 +23,8 @@ function code_contest_register(req, res) {
 
 // get input data
 function code_contest_get_input_data(req, res) {
-    console.log("code_contest_get_input_data", req.query, req.body);
-    var problem_handler = require("./code-contest-pb-"+req.query.pid+".js");
+    //console.log("code_contest_get_input_data", req.query, req.body);
+    var problem_handler = require("./code-contest-app-"+req.query.pid+".js");
     
     sqlite.sqlite_exec(db, "CREATE TABLE IF NOT EXISTS submissions ( user_id, problem_id, test_id, timestamp, validated )")
     .then(function (data) {
@@ -52,10 +52,10 @@ function code_contest_get_input_data(req, res) {
 
 // submit output data
 function code_contest_submit_output_data(req, res) {
-    console.log("code_contest_submit_output_data", req.query, req.body);
+    //console.log("code_contest_submit_output_data", req.query, req.body);
     var timestamp = (new Date()).toISOString();
     
-    var problem_handler = require("./code-contest-pb-"+req.query.pid+".js");
+    var problem_handler = require("./code-contest-app-"+req.query.pid+".js");
     var status = problem_handler.submit_output_data(req.body);
     var validated = status.validated;
     var test_id = status.test_id || (new Date()).toISOString();
@@ -63,7 +63,7 @@ function code_contest_submit_output_data(req, res) {
     sqlite.sqlite_exec(db, "INSERT INTO submissions VALUES ( ?, ?, ?, ?, ? )", 
         [ req.query.uid, req.query.pid, test_id, timestamp, validated?1:0 ])
     .then(function (data) {
-        res.send({ "validated": validated, "msg": status.msg });
+        res.send({ "validated": validated, "msg": status.msg, "next": status.next || false });
     })
     .catch(function (err) {
         console.error(err);

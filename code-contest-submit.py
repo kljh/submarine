@@ -10,11 +10,11 @@ def main():
 	required = True
 	
 	parser = argparse.ArgumentParser(description='Code Contest.')
-	parser.add_argument('--srv', dest='srv', help='server URL', default="http://localhost:8085/")
+	parser.add_argument('--srv', dest='srv', help='server URL', default="http://kljh.herokuapp.com/static/" ) # , "http://localhost:8085/")
 	parser.add_argument('--uid', dest='uid', required=required, help='user ID' ) # , default="test")
 	parser.add_argument('--pid', dest='pid', required=required, help='problem ID' ) # , default="pi")
-	parser.add_argument('--cmd', dest='cmd', required=required, help='path to command to execute', nargs='+' ) # , default=["node", "code-contest-data\\pi.js"])
-	parser.add_argument('--src', dest='src', required=required, help='path to source code')
+	parser.add_argument('--cmd', dest='cmd', required=required, help='path to command to execute', nargs='+' ) # , default=["node", "solution.js"])
+	parser.add_argument('--src', dest='src', required=required, help='path to source code', nargs='+' )
 
 	args = parser.parse_args()
 	#print("command line args: ", args)
@@ -29,7 +29,7 @@ def main():
 	# 3. send test output
 	# 4. display result. go back to 1. if more test input are available
 
-	code_contest_data = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'code-contest-data')
+	code_contest_data = os.path.join(os.path.dirname(os.path.realpath(__file__)), '.code-contest')
 	if not os.path.exists(code_contest_data):
 		os.makedirs(code_contest_data)
 	
@@ -38,7 +38,9 @@ def main():
 		sys.exit(1)
 	# To do : upload source / commit it to git
 	
+	next = ""
 	while True:
+		
 		input_data = get_input(args)
 		if input_data == None:
 			print("DONE")
@@ -55,22 +57,29 @@ def main():
 		#print("output:\n"+output_data+"\n")
 		
 		result = submit_output(args, output_data)
+		#print("result:\n", result, "\n")
+
 		if result["validated"] == False: 
-			print("STATUS: NOT VALIDATED\n", result)
+			print("STATUS", next, ": NOT VALIDATED\n", result.msg)
 			sys.exit(1)
 		elif result["validated"] == True: 
-			print("STATUS: VALIDATED\n", result)
+			print("STATUS", next, ": VALIDATED")
+			if result["next"] == None or result["next"] == False:
+				print("DONE")
+				sys.exit(0)
+			else:
+				next = result["next"]
 		else :
-			print("STATUS: UNKNOWN\n", result)
+			print("STATUS", next, ": UNKNOWN\n", result)
 			sys.exit(1)	
 
 def get_input(args):
 	r = requests.get(args.srv+"code-contest-get-input-data", params={ "uid": args.uid, "pid": args.pid })
 	#print(r.status_code, r.headers['content-type'], r.encoding)
-	print(r.text)
+	#print(r.text)
 	#print(r.json())
 	if r.status_code==404:
-		print("No nore input.")
+		print("STATUS: ALREADY VALIDATED. NO MORE INPUT.")
 		return None
 	else:
 		return r.text

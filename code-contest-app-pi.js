@@ -16,7 +16,9 @@ function submit_output_data(output_data) {
 	var pi = 1*lines[0];
 	var validated = Math.abs(pi-Math.PI) < 0.01;
 	var suspicious = Math.abs(pi-Math.PI) < 1e-12;
-	return { validated: validated, msg: (suspicious ? "well done" : "too good to be honest") };
+	var msg = validated ? (!suspicious ? "well done" : "too good to be honest") : "too far";
+	var next = true; // either the name of next testor simply a boolean
+	return { validated: validated, msg: msg, next: next};
 }
 
 module.exports = {

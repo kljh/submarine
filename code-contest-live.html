@@ -2,6 +2,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Code Contest Live</title>
+<script src="https://code.jquery.com/jquery-2.2.4.js"></script>
 <!--
 <link type="text/css" rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
 <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
@@ -16,6 +17,15 @@ ul#xanim li {
 </style>
 </head>
 <body>
+
+<p><b>Submit code for context problem <tt>pi</tt> (examples in NodeJs, Python and compiled language):</b>
+<pre>
+python code-contest-submit.py --uid "team-coimbra-2018" --pid "pi" --cmd node pi.js --src pi.js
+python code-contest-submit.py --uid "team-ensmp-2003" --pid "pi" --cmd python pi.py --src pi.py
+python code-contest-submit.py --uid "team-ist-2017" --pid "pi" --cmd pi.exe --src pi.7z
+</pre>
+</p>
+
 <div>
 	<div class="example" style="position: absolute; top: 120px;">
 		<ul id="xanim" style="height: 179px;">
@@ -32,6 +42,10 @@ ul#xanim li {
 </div>
 </body>
 <script>
+
+$.get("/sqlite_exec?db=.code-contest/db.sqlite&stmt=select * from submissions")
+.then(data => console.log(data));
+
 var ul = document.getElementById('xanim'),
 	lis = ul.querySelectorAll('li'),
 	liHeight = lis[0].offsetHeight;
