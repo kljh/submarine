@@ -10,7 +10,7 @@ def main():
 	required = True
 	
 	parser = argparse.ArgumentParser(description='Code Contest.')
-	parser.add_argument('--srv', dest='srv', help='server URL', default="http://kljh.herokuapp.com/static/" ) # , "http://localhost:8085/")
+	parser.add_argument('--srv', dest='srv', help='server URL', default="http://kljh.herokuapp.com/" ) # , "http://localhost:8085/")
 	parser.add_argument('--uid', dest='uid', required=required, help='user ID' ) # , default="test")
 	parser.add_argument('--pid', dest='pid', required=required, help='problem ID' ) # , default="pi")
 	parser.add_argument('--cmd', dest='cmd', required=required, help='path to command to execute', nargs='+' ) # , default=["node", "solution.js"])
@@ -33,9 +33,15 @@ def main():
 	if not os.path.exists(code_contest_data):
 		os.makedirs(code_contest_data)
 	
-	if args.src == None or not os.path.exists(args.src):
-		print("Path to source does not exist")
+	if args.src == None or len(args.src)==0:
+		print("src not provided")
 		sys.exit(1)
+	else:	
+		check_per_file = [  os.path.exists(src) for src in args.src ]
+		check = reduce(lambda x, y: x and y, check_per_file)
+		if check!=True:
+			print("Path to source does not exist")
+			sys.exit(1)
 	# To do : upload source / commit it to git
 	
 	next = ""

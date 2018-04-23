@@ -12,6 +12,9 @@ module.exports = function(app) {
     app.use('/code-contest-register', code_contest_register);
     app.use('/code-contest-get-input-data', code_contest_get_input_data);
     app.use('/code-contest-submit-output-data', code_contest_submit_output_data);
+
+    tmp_dir = ".code-contest"
+    fs.exists(tmp_dir, bExist => { if (!bExist) fs.mkdir(tmp_dir) }); 
 };
 
 // register a team (name, password, etc.)
