@@ -317,11 +317,7 @@ function recursive_delete(folder_path) {
 function webdav_propfind(req, res) {
     var xml_header =
         '<?xml version="1.0" encoding="utf-8"?>\n' + 
-        '<D:multistatus' +
-        //' xmlns:cs="http://calendarserver.org/ns/"' + 
-        //' xmlns:cal="urn:ietf:params:xml:ns:caldav"' + 
-        //' xmlns:card="urn:ietf:params:xml:ns:carddav"' + 
-        ' xmlns:d="DAV:">\n';
+        '<D:multistatus xmlns:D="DAV:">\n';
     var xml_footer = 
         '</D:multistatus>';
     
@@ -458,7 +454,7 @@ function webdav_propfind_response(url_path, req) {
             lock_stuff +
             '';
     }
-    console.log(href+"\n  "+name+"\n  "+crea+"\n  "+last+"\n  "+size+" "+mime);
+    //console.log(href+"\n  "+name+"\n  "+crea+"\n  "+last+"\n  "+size+" "+mime);
 
     response += 
         '      </D:prop>\n' +
