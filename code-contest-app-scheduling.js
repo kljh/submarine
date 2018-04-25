@@ -50,7 +50,8 @@ function get_input_data(previous_steps) {
 	var input_data = "# CONSIDER CALCULATION GRAPH BELOW.\n"
 		+ "# SYNTAX USED IS :  NODE_NAME:NODE_DURATION:NODE_PRECEDENTS_COMMA_SEPARATED\n"
 		+ "# CALCULATE AND WRITE ON STDOUT THE MINIMUM CALCULATION TIME.\n"
-		+ "# WRITE WHEN AND WHERE EACH NODE IS RUN ON SUBSEQUENT LINES.\n"
+		+ "# AND ON NEXT LINE THE NUMBER OF THREAD USED (NB THREADS <= NB NODES).\n"
+		+ "# THEN WRITE WHEN AND WHERE EACH NODE IS RUN ON SUBSEQUENT LINES.\n"
 		+ "# SYNTAX TO USE IS :  NODE_NAME:NODE_START:CALCULATION_THREAD(0 to N)\n"
 		+ "# SOLUTION MUST NOT RELY ON NAMES (OR ORDER) OF NODES WHICH ARE NOT SHUFFLED NOR ANONYMISED TO KEEP VISIBLE PRACTICAL APPLICATIONS OF THIS CHALLENGE.\n";
 	
@@ -61,15 +62,57 @@ function get_input_data(previous_steps) {
 }
 
 function submit_output_data(output_data, previous_steps) {
-	var lines = output_data.split("\n").filter(line => line[0]!="#");
+	var lines = output_data.split("\n").filter(line => line!="" && line[0]!="#");
+	var graph = graphs[previous_steps.length];
 	var solution = solutions[previous_steps.length].minimum_duration_by_number_of_threads;
-	var time_received = lines[0]*1;
+	var time_received = lines.shift()*1;
 	var time_expected = solution[solution.length-1];
 	
-	var correct = true; // TO DO 
+	var nb_threads_received = lines.shift()*1;
+
+	var nodes_received = [];
+	var nodes_expected = Object.keys(graph).sort();
+
+	var completed = 0.5;
+	var msg = "";
+
+	// check correctness
+	var threads_received = [];
+	for (var line of lines) {
+		var tmp = line.split(":");
+		var node = tmp[0];
+		var start = tmp[1]*1;
+		var thread = tmp[2]*1;
+		nodes_received.push(node);
+		if (graph[node]) {
+			if (!threads_received[thread]) threads_received[thread] = [];
+			threads_received[thread].push({ node: node, start: start, end: start+graph[node].duration });
+		} else {
+			completed = 0;
+			msg += "unknown node "+node+"\n"; 
+		}
+	}
+	nodes_received = nodes_received.sort();
+	if (JSON.stringify(nodes_received)!=JSON.stringify(nodes_expected)) {
+		completed = 0;
+		msg += "did not get expected list of nodes.\n" //+ JSON.stringify(nodes_received) + "\n v.s. \n" + JSON.stringify(nodes_expected) + "\n";
+	}
+	threads_received.forEach((thread, thread_id) => {
+		if (!thread) return;
+		thread = thread.sort((x,y) => x.start-y.start);
+		for (var k=0; k<thread.length-1; k++) {
+			if (thread[k+1].start<thread[k].end) {
+				completed = 0;
+				msg += thread[k+1].node + " starts ("+thread[k+1].start+") before " + thread[k].node + " ends ("+thread[k].end+").\n";
+			}
+		}
+		if (time_received<thread[k].end) {
+			completed = 0;
+			msg += thread[k].node + " ends ("+thread[k].end+") after full calculation expected ends ("+time_received+").\n";
+		}
+	});
+	msg += "received "+time_received+", expected "+time_expected+" (or even better, if possible)";
 	
-	var completed = correct ? 0.5 : 0;
-	var msg = "received "+time_received+", expected "+time_expected+" (or even better, if possible)";
 	var result = time_received - time_expected;
 	return { completed: completed, result: result, msg: msg, iterate: true};
 }
@@ -96,10 +139,22 @@ function proposed_solution() {
 	var input_data = fs.readFileSync(input_data_file,{ "encoding" : "utf-8" }).split('\n').filter(line => line[0]!='#');
 	console.log("# input_data length", input_data.length)
 	
-	var time = 999;
-	console.log("# minimum time", time)
+	// hardcoded best solution for first graph with 2 threads constraint
 	
+	var time = 52;
+	console.log("# minimum time", time);
 	console.log(time);
+
+	var nb_threads = 2;
+	console.log("# nb_threads", nb_threads);
+	console.log(nb_threads);
+	
+	console.log("A:0:0")
+	console.log("C:1:0")
+	console.log("B:18:0")
+	console.log("D:1:1")
+	console.log("E:14:1")
+	console.log("F:31:0")
 }
 
 if (process.argv.length>2) proposed_solution();

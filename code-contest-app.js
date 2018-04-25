@@ -6,6 +6,7 @@ const path = require('path');
 const crypto = require('crypto');
 const sqlite = require('./sqlite')
 const db = ".code-contest/db.sqlite"
+const mandatory_uid = false;
 
 module.exports = function(app) {
     console.log("Code Contest handler installed.")
@@ -20,7 +21,7 @@ module.exports = function(app) {
 	Promise.resolve()
 	.then(_ => sqlite.sqlite_exec(db, "DROP TABLE IF EXISTS participants"))
 	.then(_ => sqlite.sqlite_exec(db, "DROP TABLE IF EXISTS submissions"))
-	.then(_ => sqlite.sqlite_exec(db, "CREATE TABLE IF NOT EXISTS participants ( user_id, user_name, timestamp )"))
+	.then(_ => sqlite.sqlite_exec(db, "CREATE TABLE IF NOT EXISTS participants ( user_id, user_name PRIMARY KEY, timestamp )"))
 	.then(_ => sqlite.sqlite_exec(db, "CREATE TABLE IF NOT EXISTS submissions ( user_id, problem_id, attempt, timestamp, completed, result )"))
 	.catch(err => { console.error("ERROR: "+err); });
 	
@@ -33,9 +34,9 @@ function code_contest_register(req, res) {
     var uid = crypto.createHash('md5').update(timestamp+name+Math.random()).digest("hex");
 
     Promise.resolve()
-    .then(_ => sqlite.sqlite_exec(db, "INSERT INTO submissions VALUES ( ?, ?, ? )",  [ uid, name, timestamp ]))
+    .then(_ => sqlite.sqlite_exec(db, "INSERT INTO participants VALUES ( ?, ?, ? )",  [ uid, name, timestamp ]))
     .then(_ => res.send({ msg: "Hello "+name, uid: uid }))
-    .catch(err => { res.status(500); res.send("ERROR: "+err); });
+    .catch(err => { res.status(500); res.send("ERROR: "+(err.stack||err)); });
 }
 
 // get input data
@@ -43,7 +44,10 @@ function code_contest_get_input_data(req, res) {
     //console.log("code_contest_get_input_data", req.query, req.body);
     var problem_handler = require("./code-contest-app-"+req.query.pid+".js");
     
-    sqlite.sqlite_exec(db, "CREATE TABLE IF NOT EXISTS submissions ( user_id, problem_id, attempt, timestamp, completed, result )")
+    Promise.resolve()
+    .then(_ => sqlite.sqlite_exec(db, "SELECT * from participants WHERE user_id = ? ",  [ req.query.uid,  ]))
+    .then(users => { if (mandatory_uid && users.length<2) throw new Error("unknown user id '"+req.query.uid+"' (are you using user name ?)"); })
+    .then(_ => sqlite.sqlite_exec(db, "CREATE TABLE IF NOT EXISTS submissions ( user_id, problem_id, attempt, timestamp, completed, result )"))
     .then(function (data) {
         return sqlite.sqlite_exec(db, "SELECT DISTINCT timestamp, completed, result FROM submissions WHERE user_id=? and problem_id=? and attempt=? ", 
 			[ req.query.uid, req.query.pid, req.query.attempt ]);
@@ -62,7 +66,7 @@ function code_contest_get_input_data(req, res) {
     .catch(function (err) {
         console.error(err);
         res.status(500);
-        res.send("ERROR: "+err);
+        res.send("ERROR: "+(err.stack||err));
     });
 }
 
@@ -73,8 +77,11 @@ function code_contest_submit_output_data(req, res) {
     
     var problem_handler = require("./code-contest-app-"+req.query.pid+".js");
     
-    sqlite.sqlite_exec(db, "SELECT DISTINCT timestamp, completed, result FROM submissions WHERE user_id=? and problem_id=? and attempt=? ", 
-		[ req.query.uid, req.query.pid, req.query.attempt ])
+    Promise.resolve()
+    .then(_ => sqlite.sqlite_exec(db, "SELECT * from participants WHERE user_id = ? ",  [ req.query.uid,  ]))
+    .then(users => { if (mandatory_uid && users.length<2) throw new Error("unknown user id '"+req.query.uid+"' (are you using user name ?)"); })
+    .then(_ => sqlite.sqlite_exec(db, "SELECT DISTINCT timestamp, completed, result FROM submissions WHERE user_id=? and problem_id=? and attempt=? ", 
+		[ req.query.uid, req.query.pid, req.query.attempt ]))
     .then(function (previous_steps) {
          return problem_handler.submit_output_data(req.body, previous_steps);   
     })
@@ -97,6 +104,6 @@ function code_contest_submit_output_data(req, res) {
     .catch(function (err) {
         console.error(err);
         res.status(500);
-        res.send("ERROR: "+err);
+        res.send("ERROR: "+(err.stack||err));
     });
 }

@@ -10,7 +10,7 @@ function get_input_data(previous_steps) {
 }
 
 function submit_output_data(output_data, previous_steps) {
-	var lines = output_data.split("\n").filter(line => line[0]!="#");
+	var lines = output_data.split("\n").filter(line => line!="" && line[0]!="#");
 	var factors_received = lines[0].split(",").map(x => x.trim()*1).sort();
 	var factors_expected = prime_factorisation(numbers[previous_steps.length]).sort();
 	var correct = JSON.stringify(factors_received)==JSON.stringify(factors_expected);

@@ -13,7 +13,7 @@ function get_input_data(previous_steps) {
 
 function submit_output_data(output_data, previous_steps) {
 	// parse output of program
-	var lines = output_data.split("\n").filter(line => line[0]!="#");
+	var lines = output_data.split("\n").filter(line => line!="" && line[0]!="#");
 	var pi = 1*lines[0];
 	var result = pi //Math.abs(pi-Math.PI);
 
