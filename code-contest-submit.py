@@ -1,12 +1,16 @@
 from __future__ import print_function
 
 import sys, os
+import datetime
 import argparse
 import subprocess
 import requests
 
+now = datetime.datetime.utcnow() #datetime.timezone.utc)
+attempt = "ATTEMPT-"+now.isoformat()
 
 def main():
+	
 	required = True
 	
 	parser = argparse.ArgumentParser(description='Code Contest.')
@@ -43,16 +47,17 @@ def main():
 			print("Path to source does not exist")
 			sys.exit(1)
 	# To do : upload source / commit it to git
-	
-	next = ""
+
+	iter = 0	
 	while True:
-		
+		iter = iter + 1
+
 		input_data = get_input(args)
 		if input_data == None:
 			print("DONE")
 			sys.exit(0)
 
-		input_data_file = os.path.join(code_contest_data, args.pid+".txt")
+		input_data_file = os.path.join(code_contest_data, args.pid+"-"+str(iter)+".txt")
 		fo = open(input_data_file, "wb") 
 		fo.write(input_data.encode('utf-8'))
 		fo.close()
@@ -64,28 +69,30 @@ def main():
 		
 		result = submit_output(args, output_data)
 		#print("result:\n", result, "\n")
+		completed = result["completed"]
+		iterate = result["iterate"]
+		msg = result["msg"]
 
-		if result["validated"] == False: 
-			print("STATUS", next, ": NOT VALIDATED\n", result.msg)
+		if completed == False or completed == 0: 
+			print("STATUS", iter, ": REJECTED", msg)
 			sys.exit(1)
-		elif result["validated"] == True: 
-			print("STATUS", next, ": VALIDATED")
-			if result["next"] == None or result["next"] == False:
-				print("DONE")
-				sys.exit(0)
-			else:
-				next = result["next"]
-		else :
-			print("STATUS", next, ": UNKNOWN\n", result)
-			sys.exit(1)	
+		elif completed == True  or completed == 1: 
+			print("STATUS", iter, ": COMPLETED", )
+			sys.exit(0)
+		else:
+			print("STATUS", iter, ": RECORDED", msg)
+
+		if iterate != True:
+			print("DONE")
+			sys.exit(0)
 
 def get_input(args):
-	r = requests.get(args.srv+"code-contest-get-input-data", params={ "uid": args.uid, "pid": args.pid })
+	r = requests.get(args.srv+"code-contest-get-input-data", params={ "uid": args.uid, "pid": args.pid, "attempt": attempt })
 	#print(r.status_code, r.headers['content-type'], r.encoding)
 	#print(r.text)
 	#print(r.json())
 	if r.status_code==404:
-		print("STATUS: ALREADY VALIDATED. NO MORE INPUT.")
+		print("STATUS: COMPLETE. NO MORE INPUT.")
 		return None
 	else:
 		return r.text
@@ -104,13 +111,15 @@ def run_command(args, input_data_file):
 	return output_data
 
 def submit_output(args, output_data):
-	r = requests.post(args.srv+"code-contest-submit-output-data", params={ "uid": args.uid, "pid": args.pid }, 
+	r = requests.post(args.srv+"code-contest-submit-output-data", params={ "uid": args.uid, "pid": args.pid, "attempt": attempt }, 
 		data = output_data, # data=json.dumps(payload)  or  json=payload
 		headers= { 'content-type': 'text/plain; charset=UTF-8' } # 'text/plain' or  'application/octet-stream' for plain data
 		)
-	#print(r.status_code, r.headers['content-type'], r.encoding)
-	#print(r.text)
-	#print(r.json())
-	return r.json()
+	try: 
+		return r.json()
+	except Exception as e:
+		print(r.status_code, r.headers['content-type'], r.encoding)
+		print(r.text)
+		raise e
 
 main()

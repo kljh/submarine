@@ -3,6 +3,7 @@
 const url = require('url');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const sqlite = require('./sqlite')
 const db = ".code-contest/db.sqlite"
 
@@ -15,13 +16,26 @@ module.exports = function(app) {
 
     var tmp_dir = ".code-contest"
     fs.exists(tmp_dir, bExist => { if (!bExist) fs.mkdir(tmp_dir) }); 
+
+	Promise.resolve()
+	.then(_ => sqlite.sqlite_exec(db, "DROP TABLE IF EXISTS participants"))
+	.then(_ => sqlite.sqlite_exec(db, "DROP TABLE IF EXISTS submissions"))
+	.then(_ => sqlite.sqlite_exec(db, "CREATE TABLE IF NOT EXISTS participants ( user_id, user_name, timestamp )"))
+	.then(_ => sqlite.sqlite_exec(db, "CREATE TABLE IF NOT EXISTS submissions ( user_id, problem_id, attempt, timestamp, completed, result )"))
+	.catch(err => { console.error("ERROR: "+err); });
+	
 };
 
 // register a team (name, password, etc.)
 function code_contest_register(req, res) {
     var name = req.query.name || req.body.name;
-    
-    res.send({ msg: "Hello "+name });
+    var timestamp = (new Date()).toISOString();
+    var uid = crypto.createHash('md5').update(timestamp+name+Math.random()).digest("hex");
+
+    Promise.resolve()
+    .then(_ => sqlite.sqlite_exec(db, "INSERT INTO submissions VALUES ( ?, ?, ? )",  [ uid, name, timestamp ]))
+    .then(_ => res.send({ msg: "Hello "+name, uid: uid }))
+    .catch(err => { res.status(500); res.send("ERROR: "+err); });
 }
 
 // get input data
@@ -29,16 +43,15 @@ function code_contest_get_input_data(req, res) {
     //console.log("code_contest_get_input_data", req.query, req.body);
     var problem_handler = require("./code-contest-app-"+req.query.pid+".js");
     
-    sqlite.sqlite_exec(db, "CREATE TABLE IF NOT EXISTS submissions ( user_id, problem_id, test_id, timestamp, validated )")
+    sqlite.sqlite_exec(db, "CREATE TABLE IF NOT EXISTS submissions ( user_id, problem_id, attempt, timestamp, completed, result )")
     .then(function (data) {
-        return sqlite.sqlite_exec(db, "SELECT DISTINCT test_id FROM submissions WHERE user_id=? and problem_id=? and validated=1 ", 
-			[ req.query.uid, req.query.pid ]);
+        return sqlite.sqlite_exec(db, "SELECT DISTINCT timestamp, completed, result FROM submissions WHERE user_id=? and problem_id=? and attempt=? ", 
+			[ req.query.uid, req.query.pid, req.query.attempt ]);
     })
-    .then(function (data) {
-        return data.map(row => row[0]).slice(1);
+    .then(function (previous_steps) {
+		return problem_handler.get_input_data(previous_steps);
     })
-    .then(function (validated_tests) {
-        var input_data = problem_handler.get_input_data(validated_tests);
+    .then(function (input_data) {
         if (input_data!==undefined) {
             res.send(input_data);
         } else {
@@ -59,14 +72,27 @@ function code_contest_submit_output_data(req, res) {
     var timestamp = (new Date()).toISOString();
     
     var problem_handler = require("./code-contest-app-"+req.query.pid+".js");
-    var status = problem_handler.submit_output_data(req.body);
-    var validated = status.validated;
-    var test_id = status.test_id || (new Date()).toISOString();
     
-    sqlite.sqlite_exec(db, "INSERT INTO submissions VALUES ( ?, ?, ?, ?, ? )", 
-        [ req.query.uid, req.query.pid, test_id, timestamp, validated?1:0 ])
-    .then(function (data) {
-        res.send({ "validated": validated, "msg": status.msg, "next": status.next || false });
+    sqlite.sqlite_exec(db, "SELECT DISTINCT timestamp, completed, result FROM submissions WHERE user_id=? and problem_id=? and attempt=? ", 
+		[ req.query.uid, req.query.pid, req.query.attempt ])
+    .then(function (previous_steps) {
+         return problem_handler.submit_output_data(req.body, previous_steps);   
+    })
+    .then(function (status) {
+        // completion : 1 for fully completed, 0.5 for correct intermediate output, 0 for incorrect output
+        var completed = status.completed; 
+        if (typeof completed == "boolean") completed = completed?1:0;
+
+        // result : a measure of the quality of the output (accuracy, optimality, complexity)
+        var result = status.result;
+
+        // fields used by submission script: status.iterate, status.msg 
+
+        return sqlite.sqlite_exec(db, "INSERT INTO submissions VALUES ( ?, ?, ?, ?, ?, ? )", 
+            [ req.query.uid, req.query.pid, req.query.attempt, timestamp, completed, result ])
+        .then(function (db_res) {
+            res.send({ "completed": completed, "msg": status.msg, "iterate": status.iterate || false });
+        });
     })
     .catch(function (err) {
         console.error(err);
