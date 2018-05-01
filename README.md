@@ -1,4 +1,7 @@
 
+A simple Web server with Single Sign On (SSO), WebDAV, publish-subscribe based on Websocket.
+
+
 # Authentication
 
 Two authentication methods are supported:
@@ -52,7 +55,7 @@ We'll put in place a fair-use queuing where the calculation resources are share 
 
 Next: 
 - Should we use user id ? Pros: simpler. Cons: same user may run a high priority interactive query and a low priority background batch.
-- Should we use session id ? Pros: would a loow cancelation. Cons: more complex and can be arbitrage (create many sessions)
+- Should we use session id ? Pros: would allow cancelation. Cons: more complex and can be arbitraged (create many sessions to get more resources)
 
 
 # Publish-Subscribe
@@ -84,7 +87,7 @@ Then all subscribers receive a copy of the published message(s).
 
 **Application**: broadcast notifications.
 
-**Limitations**: only people connected at the time the message is published will receive a copy.  Websocket can easily disconnect and reconnect, there is no strong guarantee of delivery.
+**Limitations**: only people connected at the time the message is published will receive a copy.  WebSockets can easily disconnect and reconnect, there is no strong guarantee of delivery.
 
 # Queue push-pop
 

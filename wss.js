@@ -105,6 +105,9 @@ app.use(function(req, res, next) {
     next();
 }); */
 
+// webdav (and permissions)
+app.use(require('./webdav').webdav_init({ http_port: http_port }));
+
 // static files 
 console.log('HTTP server exposes static files...');
 app.use('/static', express.static(path.join(__dirname, 'static')));
@@ -125,9 +128,6 @@ app.use(bodyParser.raw({ limit: '50mb', type: function(req) {
 app.use(bodyParser.text())
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
-
-// webdav 
-app.use(require('./webdav').webdav_init({ http_port: http_port }));
 
 // authentication
 if (sspi_auth)

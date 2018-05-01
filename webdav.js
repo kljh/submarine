@@ -3,7 +3,7 @@
 const url = require('url');
 const fs = require('fs');
 const path = require('path');
-//const auth = require('./basic-auth');
+const auth = require('./basic-auth');
 //const cfg_file = require('./config.json');
 
 /*
@@ -544,19 +544,23 @@ function webdav_init(cfg_args) {
     console.log("HTTP WebDav under Win7: \\\\localhost@"+cfg_args.http_port+"\\DavWWWRoot")
     
     function webdav_handler(req, res, next) {
-        if ([ 'HEAD', 'GET', 'POST' ].indexOf(req.method)!==-1)
-            return next();
-
-        if (req.method!=="PUT")
-            console.log("webdav", req.method, req.body || "(no body)" );
-
-        // if ([ 'PUT', 'DELETE' ].indexOf(req.method)!==-1) {
-        //     var bAuth = auth.check_autorization(req, res);
-        //     if (!bAuth) return;
-        // }
-
+        var read_request = [ 'HEAD', 'GET', 'POST' ].indexOf(req.method)!==-1;
+        var root_request = req.path.substr(0,5) == '/root';
+        if (!read_request || root_request) 
+		{
+            var bAuth = auth.check_autorization(req, res);
+            if (!bAuth) return;
+        }
+        console.log("> auth ok")
+        
         switch (req.method) {
+            case 'HEAD':
+            case 'GET':
+            case 'POST':
+                return next();
+            
             case 'PUT':
+                console.log("webdav", req.method, req.path, req.body || "(no body)" );
                 return webdav_put(req, res);
 
             case 'OPTIONS':
@@ -581,7 +585,7 @@ function webdav_init(cfg_args) {
             
             default:
                 // unexpected HTTP method
-                console.warn("webdav unexpected HTTP method", req.method);
+                console.warn("webdav unexpected HTTP method", req.method, req.path);
                 next();
         }
     }
