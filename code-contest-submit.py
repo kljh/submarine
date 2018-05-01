@@ -26,7 +26,7 @@ def main():
 	#if args.uid == None : 
 	#	parser.print_help()
 	#	sys.exit(1)
-		
+	
 	# 0. send source
 	# 1. get test input, save to disk
 	# 2. run the command
@@ -46,6 +46,16 @@ def main():
 		if check!=True:
 			print("Path to source does not exist")
 			sys.exit(1)
+		
+		headers = { "Content-Type": "application/octet-stream" }
+		
+		for src in args.src: 
+			with open(src, "rb") as fi:
+				src_bs = fi.read();
+				fi.close()
+			response = requests.post(args.srv+"/code-contest-upload-source", data=src_bs, headers=headers, 
+				params={ "uid": args.uid, "pid": args.pid, "attempt": attempt, src: src })
+
 	# To do : upload source / commit it to git
 
 	iter = 0	

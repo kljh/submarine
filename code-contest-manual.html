@@ -1,0 +1,35 @@
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Code Contest Manual</title>
+<script src="https://code.jquery.com/jquery-2.2.4.js"></script>
+<!--
+<link type="text/css" rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+<script src="tinysort.js"></script>
+<script src="dist/tinysort.charorder.js"></script>
+-->
+<style>
+ul#xanim li {
+    transition: top 500ms;
+    -webkit-transition: top 500ms;
+}
+</style>
+</head>
+<body>
+
+<p><b>Command line examples to submit solution to coding challenges <tt>pi</tt>, <tt>prime</tt> and <tt>scheduling</tt> (respectively coded with NodeJs, Python and a compiled language):</b>
+<pre>
+python code-contest-submit.py --uid "team-coimbra-2018" --pid "pi" --cmd node pi.js --src pi.js
+python code-contest-submit.py --uid "team-ensmp-2003" --pid "prime" --cmd python prime.py --src prime.py
+python code-contest-submit.py --uid "team-ist-2017" --pid "scheduling" --cmd scheduling.exe --src makefile scheduling.go 
+</pre>
+</p>
+
+<p><b>Workflow used by submission script</b><br/>
+<img src="code-contest-submit.png" style="width: 100%;"><br/>
+Note: input files saved in <tt>.code-contest</tt> subfolder.
+</p>
+
+</body>
+</html>
