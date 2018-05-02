@@ -20,8 +20,8 @@ module.exports = function(app) {
     fs.exists(tmp_dir, bExist => { if (!bExist) fs.mkdir(tmp_dir) }); 
 
 	Promise.resolve()
-	.then(_ => sqlite.sqlite_exec(db, "DROP TABLE IF EXISTS participants"))
-	.then(_ => sqlite.sqlite_exec(db, "DROP TABLE IF EXISTS submissions"))
+	//.then(_ => sqlite.sqlite_exec(db, "DROP TABLE IF EXISTS participants"))
+	//.then(_ => sqlite.sqlite_exec(db, "DROP TABLE IF EXISTS submissions"))
 	.then(_ => sqlite.sqlite_exec(db, "CREATE TABLE IF NOT EXISTS participants ( user_id, user_name PRIMARY KEY, timestamp )"))
 	.then(_ => sqlite.sqlite_exec(db, "CREATE TABLE IF NOT EXISTS submissions ( user_id, problem_id, attempt, timestamp, completed, result )"))
 	.catch(err => { console.error("ERROR: "+err); });
@@ -54,8 +54,8 @@ function code_contest_upload_source(req, res) {
 	if (git) {
         git_commit(git_repo_path, [ path.posix.join(req.query.uid, req.query.pid, req.query.src.replace(/\\/g, "/")) ], 
             { user: req.query.uid, email: req.query.email || "code@main2.fr", msg: req.query.msg })
-        .then(function (res) {
-            res.send(res);
+        .then(function (git_commit_info) {
+            res.send(""+git_commit_info);
         })
         .catch(function (err) {
             console.error(err);
@@ -164,8 +164,11 @@ function git_commit(git_repo_path, src_files, prms) {
 		return Promise.all(add_promises);
     })
 	.then(err_codes => {
-		var ok = err_codes.reduce((acc, val) => { return acc && (val==0); }, true);
-		if (ok!==true) throw new Error("index.addByPath failed");
+		var ok = err_codes.reduce((acc, val) => { return acc && !val; }, true);
+		if (!ok) { 
+			console.error("index.addByPath failed");
+			throw new Error("index.addByPath failed");
+		}
 		return index.write(); 
 	})
 	.then(err_code => { 
@@ -173,7 +176,6 @@ function git_commit(git_repo_path, src_files, prms) {
 	})
 	.then(oid_result => { 
 		oid = oid_result;
-		console.log("oid", oid);
 		return git.Reference.nameToId(repo, "HEAD");
 	})
 	.then(function(head) {
@@ -182,13 +184,17 @@ function git_commit(git_repo_path, src_files, prms) {
 	.then(function(parent) {
 		var update_ref = "HEAD";
 		
-		var author = git.Signature.now(prms.user, prms.email);
+		var author = git.Signature.now(prms.user||"anonymous", prms.email||"unknown@null.com");
 		var committer = author;
 		
 		var message = prms.msg || "(no message)";
 		return repo.createCommit(update_ref, author, committer, message, oid, [ parent ]);
-    });
-    
+    })
+	.then(commit => {
+		console.log("commit", commit);
+		return commit;
+	});
+
     return git_promise;
 }
 
@@ -200,3 +206,11 @@ function mkdirsSync(folder) {
 		fs.mkdirSync(folder); 
     }
 }
+
+function _git_commit_test() {
+	var git_repo_path =  path.join(__dirname, "code-contest.git"); 
+	fs.writeFileSync(path.join(git_repo_path, "test.txt"), "a random number\n"+Math.random());
+	git_commit(git_repo_path, [ "test.txt" ], { user: "test", email: "test@null.com"})
+	.catch(err => console.error("git_commit: "+(e.stack||e)));
+}
+//git_commit_test();

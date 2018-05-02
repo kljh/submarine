@@ -12,6 +12,9 @@ module.exports = {
     check_autorization: check_autorization
 }
 
+var nonce_check_uniqueness = false;
+var nonces = new Map();
+
 function check_autorization(request, response) {
     // if no authentication 
     function request_authentication(bStale) {
@@ -23,8 +26,16 @@ function check_autorization(request, response) {
         response.writeHeader(401, { "WWW-Authenticate": "Digest algorithm=\"MD5\", realm=\""+realm+"\", nonce=\""+nonce+"\", opaque=\""+opaque+"\", qop=\"auth\"" });
         response.write("401 Unauthorized\n");
         response.end();
+        
+        if (nonce_check_uniqueness) {
+            // track generated nonce
+            nonces.set(nonce, nonce);
+            // delete older nonces if too big
+            if (nonces.size>120) 
+                for (var kv of nonces) { nonces.delete(kv[0]); break; }
+        }
+
     }
-    console.log("request.headers", request.headers);
         
     if (!request.headers['authorization']) {
         request_authentication();
@@ -90,7 +101,15 @@ function check_autorization(request, response) {
             console.log("ct3: "+ct3);            
             console.log("authorization "+rfc+" failed");
         } else {
-            console.log("authorization "+rfc+" passed: "+bAuth+" BUT WE DO NOT CHECK NONCE UNIQUENESS");
+            if (!nonce_check_uniqueness) {
+                //console.log("authorization "+rfc+" passed: "+bAuth+" BUT WE DO NOT CHECK NONCE UNIQUENESS");
+            } else if (nonces.has(auth_data.nonce)) {
+                // removed used nonce
+                nonces.delete(auth_data.nonce);
+            } else {
+                bAuth = false;
+                console.warn("auth_data can't recall nonce: "+auth_data.nonce);
+            }
         }
 
     } else {

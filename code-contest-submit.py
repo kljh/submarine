@@ -56,7 +56,7 @@ def main():
 				fi.close()
 			response = requests.post(args.srv+"code-contest-upload-source", data=src_bs, headers=headers, 
 				params={ "uid": args.uid, "pid": args.pid, "attempt": attempt, "src": src, "email" : args.email})
-			print(args.srv+"code-contest-upload-source", src, response)
+			print(args.srv+"code-contest-upload-source", src, response.status_code, response.text)
 
 	iter = 0	
 	while True:

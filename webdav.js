@@ -551,7 +551,6 @@ function webdav_init(cfg_args) {
             var bAuth = auth.check_autorization(req, res);
             if (!bAuth) return;
         }
-        console.log("> auth ok")
         
         switch (req.method) {
             case 'HEAD':

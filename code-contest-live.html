@@ -10,17 +10,38 @@
 <script src="dist/tinysort.charorder.js"></script>
 -->
 <style>
-ul#xanim li {
+div#xanim span {
     transition: top 500ms;
     -webkit-transition: top 500ms;
+}
+.rankbox {
+	/* position: absolute; */
+	height: 22px;
+	border-radius: 5px;
+	background-color: #5b6dcd;
+    color: #fff;
+    padding: 4px 8px;
+}
+.columnbox {
+	display: flex;
+    justify-content: center;
+    flex-direction: column;
 }
 </style>
 </head>
 <body>
 
+<div style="border: 1px grey solid; height: 180px; width: 200px; overflow: hidden;">
+<p>Live ranking</p>
 <div>
-	<div class="example" style="position: absolute; top: 120px;">
-		<ul id="xanim" style="height: 179px;">
+	<div id="xanim" class="rankdiv" style="position: absolute;">
+		<span class="rankbox">Sophia</span>
+		<span class="rankbox" style="top: 35px;">France</span>
+		<span class="rankbox" style="top: 70px;">Paris</span>
+	</div>
+	<!--	
+	<div class="example" style="position: absolute;">
+		<ul id="xanim" style="">
 			<li style="position: absolute; top: 0px;">Sophia</li>
 			<li style="position: absolute; top: 22px;">France</li>
 			<li style="position: absolute; top: 44px;">Louisiane</li>
@@ -31,6 +52,8 @@ ul#xanim li {
 			<li style="position: absolute; top: 154px;">Vendredi</li>
 		</ul>
 	</div>
+	-->
+</div>
 </div>
 
 </body>
@@ -39,15 +62,28 @@ ul#xanim li {
 $.get("/sqlite_exec?db=.code-contest/db.sqlite&stmt=select * from submissions")
 .then(data => console.log(data));
 
-var ul = document.getElementById('xanim'),
-	lis = ul.querySelectorAll('li'),
-	liHeight = lis[0].offsetHeight;
+function ranksort_init() {
+	var rankDiv = document.getElementById('xanim'),
+		rankBoxes = rankDiv.querySelectorAll('span'),
+		rankBoxHeight = rankBoxes[0].offsetHeight+8;
 	
-ul.style.height = ul.offsetHeight+'px';
-for (var i= 0,l=lis.length;i<l;i++) {
-    var li = lis[i];
-    li.style.position = 'absolute';
-    li.style.top = i*liHeight+'px';
+	// initial
+	rankDiv.style.height = rankDiv.offsetHeight+'px';
+	for (var i=0, n=rankBoxes.length; i<n; i++) {
+		var rb = rankBoxes[i];
+		rb.style.position = 'absolute';
+		rb.style.top = i*rankBoxHeight+'px';
+	}
+
+	// sort 
+	function sort(rank) {
+		rankBoxes.forEach(function(elm,i) {
+			setTimeout((function(elm,i){
+				elm.style.top = pos[i]*rankBoxHeight+'px';
+			}).bind(null,elm,i),40);
+		});
+	}
+	return sort;
 }
 
 function shuffle(v) {
@@ -61,13 +97,10 @@ function shuffle(v) {
 	return v;
 }
 
-var test = ul.querySelectorAll('ul#xanim>li');
-var pos = shuffle(new Array(test.length).fill(null).map((x, i) =>i))
+var ranksort = ranksort_init();
+var nbBoxes = document.getElementById('xanim').querySelectorAll('#xanim>span').length;
+var pos = shuffle(new Array(nbBoxes).fill(null).map((x, i) =>i))
+ranksort(pos);
 
-test.forEach(function(elm,i){
-    setTimeout((function(elm,i){
-        elm.style.top = pos[i]*liHeight+'px';
-    }).bind(null,elm,i),40);
-});
 </script>
 </html>
