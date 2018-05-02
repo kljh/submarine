@@ -19,6 +19,8 @@ def main():
 	parser.add_argument('--pid', dest='pid', required=required, help='problem ID' ) # , default="pi")
 	parser.add_argument('--cmd', dest='cmd', required=required, help='path to command to execute', nargs='+' ) # , default=["node", "solution.js"])
 	parser.add_argument('--src', dest='src', required=required, help='path to source code', nargs='+' )
+	parser.add_argument('--email', dest='email', help='email in Git', default=None )
+	parser.add_argument('--msg', dest='msg', help='message in Git', default=None )
 
 	args = parser.parse_args()
 	#print("command line args: ", args)
@@ -33,7 +35,7 @@ def main():
 	# 3. send test output
 	# 4. display result. go back to 1. if more test input are available
 
-	code_contest_data = os.path.join(os.path.dirname(os.path.realpath(__file__)), '.code-contest')
+	code_contest_data = os.path.join(os.path.dirname(os.path.realpath(__file__)), '.code-contest-submit')
 	if not os.path.exists(code_contest_data):
 		os.makedirs(code_contest_data)
 	
@@ -48,15 +50,13 @@ def main():
 			sys.exit(1)
 		
 		headers = { "Content-Type": "application/octet-stream" }
-		
 		for src in args.src: 
 			with open(src, "rb") as fi:
-				src_bs = fi.read();
+				src_bs = fi.read()
 				fi.close()
-			response = requests.post(args.srv+"/code-contest-upload-source", data=src_bs, headers=headers, 
-				params={ "uid": args.uid, "pid": args.pid, "attempt": attempt, src: src })
-
-	# To do : upload source / commit it to git
+			response = requests.post(args.srv+"code-contest-upload-source", data=src_bs, headers=headers, 
+				params={ "uid": args.uid, "pid": args.pid, "attempt": attempt, "src": src, "email" : args.email})
+			print(args.srv+"code-contest-upload-source", src, response)
 
 	iter = 0	
 	while True:
