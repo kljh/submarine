@@ -1,4 +1,5 @@
 from __future__ import print_function
+from functools import reduce # required for Python 3, in global namespace in Python 2.6+
 
 import sys, os
 import datetime
@@ -16,6 +17,7 @@ def main():
 	parser = argparse.ArgumentParser(description='Code Contest.')
 	parser.add_argument('--srv', dest='srv', help='server URL', default="http://kljh.herokuapp.com/" ) # , "http://localhost:8085/")
 	parser.add_argument('--uid', dest='uid', required=required, help='user ID' ) # , default="test")
+	parser.add_argument('--pwd', dest='pwd', required=required, help='user password', default="test")
 	parser.add_argument('--pid', dest='pid', required=required, help='problem ID' ) # , default="pi")
 	parser.add_argument('--cmd', dest='cmd', required=required, help='path to command to execute', nargs='+' ) # , default=["node", "solution.js"])
 	parser.add_argument('--src', dest='src', required=required, help='path to source code', nargs='+' )

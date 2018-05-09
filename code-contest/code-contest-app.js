@@ -4,19 +4,19 @@ const url = require('url');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const sqlite = require('./sqlite')
-const db = ".code-contest/db.sqlite"
+const sqlite = require('../sqlite');
+const db = path.join(__dirname, ".code-contest/db.sqlite");
 const mandatory_uid = false;
 
 module.exports = function(app) {
-    console.log("Code Contest handler installed.")
+    console.log("Code Contest handler installed. "+db)
 
     app.use('/code-contest-register', code_contest_register);
     app.use('/code-contest-upload-source', code_contest_upload_source);
     app.use('/code-contest-get-input-data', code_contest_get_input_data);
     app.use('/code-contest-submit-output-data', code_contest_submit_output_data);
 
-    var tmp_dir = ".code-contest"
+    var tmp_dir = path.join(__dirname, ".code-contest");
     fs.exists(tmp_dir, bExist => { if (!bExist) fs.mkdir(tmp_dir) }); 
 
 	Promise.resolve()
@@ -24,7 +24,7 @@ module.exports = function(app) {
 	//.then(_ => sqlite.sqlite_exec(db, "DROP TABLE IF EXISTS submissions"))
 	.then(_ => sqlite.sqlite_exec(db, "CREATE TABLE IF NOT EXISTS participants ( user_id, user_name PRIMARY KEY, timestamp )"))
 	.then(_ => sqlite.sqlite_exec(db, "CREATE TABLE IF NOT EXISTS submissions ( user_id, problem_id, attempt, timestamp, completed, result )"))
-	.catch(err => { console.error("ERROR: "+err); });
+	.catch(err => { console.error("ERROR: "+(err.stack||err)); });
 	
 };
 
@@ -208,7 +208,7 @@ function mkdirsSync(folder) {
 }
 
 function _git_commit_test() {
-	var git_repo_path =  path.join(__dirname, "code-contest.git"); 
+	var git_repo_path = path.join(__dirname, ".code-contest-test")
 	fs.writeFileSync(path.join(git_repo_path, "test.txt"), "a random number\n"+Math.random());
 	git_commit(git_repo_path, [ "test.txt" ], { user: "test", email: "test@null.com"})
 	.catch(err => console.error("git_commit: "+(e.stack||e)));
