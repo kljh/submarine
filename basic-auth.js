@@ -2,11 +2,8 @@
 
 const fs = require('fs');
 var credentials = {};
-try { 
-    credentials = JSON.parse(fs.readFileSync('.auth'));
-} catch (e) {
-    console.error(e);
-}
+// try { credentials = JSON.parse(fs.readFileSync('uploads/.auth')); } catch (e) { console.error(""+e); }
+try { credentials = JSON.parse(fs.readFileSync('.auth')); } catch (e) { console.error(""+e); }
 
 module.exports = {
     check_autorization: check_autorization
@@ -52,9 +49,14 @@ function check_autorization(request, response) {
         var auth_buff = new Buffer(auth64, 'base64');  // convert base64 to raw binary data held in a string
         var auth = ""+auth_buff;
 
-        console.log("authorization: "+auth);
-        console.log("authorization expected: "+pwd);
-        bAuth = auth.indexOf(pwd)!=-1;
+        var tmp = auth.split(":");
+        var user = tmp[0];
+        var pwd = tmp[1];
+        var pwd_expected = credentials[user];
+
+        console.log("authorization received: "+auth);
+        console.log("authorization expected: "+user+":"+pwd_expected);
+        bAuth = pwd==pwd_expected;
         console.log("authorization passed: "+bAuth);
     } else if (auth.indexOf("Digest")==0) {
         var auth_split = auth.substr(7).split(",");
