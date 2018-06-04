@@ -11,10 +11,10 @@ const mandatory_uid = false;
 module.exports = function(app) {
     console.log("Code Contest handler installed. "+db)
 
-    app.use('/code-contest-register', code_contest_register);
-    app.use('/code-contest-upload-source', code_contest_upload_source);
-    app.use('/code-contest-get-input-data', code_contest_get_input_data);
-    app.use('/code-contest-submit-output-data', code_contest_submit_output_data);
+    app.use('/code-contest/register', code_contest_register);
+    app.use('/code-contest/upload-source', code_contest_upload_source);
+    app.use('/code-contest/get-input-data', code_contest_get_input_data);
+    app.use('/code-contest/submit-output-data', code_contest_submit_output_data);
 
     var tmp_dir = path.join(__dirname, ".code-contest");
     fs.exists(tmp_dir, bExist => { if (!bExist) fs.mkdir(tmp_dir) }); 

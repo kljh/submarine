@@ -56,9 +56,9 @@ def main():
 			with open(src, "rb") as fi:
 				src_bs = fi.read()
 				fi.close()
-			response = requests.post(args.srv+"code-contest-upload-source", data=src_bs, headers=headers, 
+			response = requests.post(args.srv+"code-contest/upload-source", data=src_bs, headers=headers, 
 				params={ "uid": args.uid, "pid": args.pid, "attempt": attempt, "src": src, "email" : args.email})
-			print(args.srv+"code-contest-upload-source", src, response.status_code, response.text)
+			print(args.srv+"code-contest/upload-source", src, response.status_code, response.text)
 
 	iter = 0	
 	while True:
@@ -99,7 +99,7 @@ def main():
 			sys.exit(0)
 
 def get_input(args):
-	r = requests.get(args.srv+"code-contest-get-input-data", params={ "uid": args.uid, "pid": args.pid, "attempt": attempt })
+	r = requests.get(args.srv+"code-contest/get-input-data", params={ "uid": args.uid, "pid": args.pid, "attempt": attempt })
 	#print(r.status_code, r.headers['content-type'], r.encoding)
 	#print(r.text)
 	#print(r.json())
@@ -123,7 +123,7 @@ def run_command(args, input_data_file):
 	return output_data
 
 def submit_output(args, output_data):
-	r = requests.post(args.srv+"code-contest-submit-output-data", params={ "uid": args.uid, "pid": args.pid, "attempt": attempt }, 
+	r = requests.post(args.srv+"code-contest/submit-output-data", params={ "uid": args.uid, "pid": args.pid, "attempt": attempt }, 
 		data = output_data, # data=json.dumps(payload)  or  json=payload
 		headers= { 'content-type': 'text/plain; charset=UTF-8' } # 'text/plain' or  'application/octet-stream' for plain data
 		)

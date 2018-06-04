@@ -17,7 +17,7 @@ function check_autorization(request, response) {
         var realm = "local node httpd"
         var nonce = "never-twice-"+Date.now();
         var opaque = "server-says-quote-this-text-when-replying";
-        console.log("request_authentication: reply 401 Unauthorized", request.path);
+        console.log("request_authentication: reply 401 Unauthorized", request.url);
         response.status(401)
         response.writeHeader(401, { "WWW-Authenticate": "Basic realm=\""+realm+"\"" });
         //response.writeHeader(401, { "WWW-Authenticate": "Digest algorithm=\"MD5\", realm=\""+realm+"\", nonce=\""+nonce+"\", opaque=\""+opaque+"\", qop=\"auth\"" });
