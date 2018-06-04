@@ -545,7 +545,7 @@ function webdav_init(cfg_args) {
     
     function webdav_handler(req, res, next) {
         var read_request = [ 'HEAD', 'GET', 'POST' ].indexOf(req.method)!==-1;
-        var root_request = req.path.substr(0,5) == '/root';
+        var root_request = req.path.substr(1).split('/').length == 1;
         if (!read_request || root_request) 
 		{
             var bAuth = auth.check_autorization(req, res);

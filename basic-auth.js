@@ -1,8 +1,7 @@
 'use strict';
 
 const fs = require('fs');
-var credentials = {};
-// try { credentials = JSON.parse(fs.readFileSync('uploads/.auth')); } catch (e) { console.error(""+e); }
+var credentials = { "public": "public" };
 try { credentials = JSON.parse(fs.readFileSync('.auth')); } catch (e) { console.error(""+e); }
 
 module.exports = {
@@ -18,7 +17,7 @@ function check_autorization(request, response) {
         var realm = "local node httpd"
         var nonce = "never-twice-"+Date.now();
         var opaque = "server-says-quote-this-text-when-replying";
-        console.log("401 Unauthorized");
+        console.log("request_authentication: reply 401 Unauthorized", request.path);
         response.status(401)
         response.writeHeader(401, { "WWW-Authenticate": "Digest algorithm=\"MD5\", realm=\""+realm+"\", nonce=\""+nonce+"\", opaque=\""+opaque+"\", qop=\"auth\"" });
         response.write("401 Unauthorized\n");
@@ -104,9 +103,10 @@ function check_autorization(request, response) {
             console.log("authorization "+rfc+" failed");
         } else {
             if (!nonce_check_uniqueness) {
-                //console.log("authorization "+rfc+" passed: "+bAuth+" BUT WE DO NOT CHECK NONCE UNIQUENESS");
+                //console.log("authorization "+rfc+" passed BUT WE DO NOT CHECK NONCE UNIQUENESS");
             } else if (nonces.has(auth_data.nonce)) {
                 // removed used nonce
+                //console.log("authorization "+rfc+" passed");
                 nonces.delete(auth_data.nonce);
             } else {
                 bAuth = false;

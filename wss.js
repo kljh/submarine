@@ -111,10 +111,9 @@ app.use(require('./webdav').webdav_init({ http_port: http_port }));
 // static files 
 console.log('HTTP server exposes static files...');
 app.use('/static', express.static(path.join(__dirname, 'static')));
-app.use('/root', express.static(__dirname));
+app.use('/', express.static(__dirname));
 
 // link to other projects
-app.use('/code-contest', express.static(path.join(__dirname, 'code-contest')));
 app.use('/kljh', express.static(path.join(__dirname, '..\\kljh.github.io')));
 app.use('/grid', express.static(path.join(__dirname, '..\\grid'))); 
 app.use('/mindthegap', express.static(path.join(__dirname, '..\\mindthegap'))); 
