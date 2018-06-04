@@ -10,10 +10,10 @@ Sub sdakj()
     Debug.Print s
     
 End Sub
-Function HttpRequest(url, Optional body = "")
+Function HttpRequest(url, Optional body = "", Optional user As String = "", Optional pwd As String = "")
     Dim request_body As String, reply_body As String, error_body As String
-    request_body = body
-    Call HttpRequestImpl(url, request_body, reply_body, error_body)
+    request_body = range_to_text(body)
+    Call HttpRequestImpl(url, request_body, reply_body, error_body, user, pwd)
     
     If error_body = "" Then
         HttpRequest = text_to_range(reply_body)
@@ -24,7 +24,7 @@ Function HttpRequest(url, Optional body = "")
     
 End Function
 
-Function HttpRequestImpl(url, ByRef request_body As String, ByRef reply_body As String, ByRef error_body As String)
+Function HttpRequestImpl(url, ByRef request_body As String, ByRef reply_body As String, ByRef error_body As String, user As String, pwd As String)
     On Error GoTo error_handler
     
     Dim xhr
@@ -35,7 +35,7 @@ Function HttpRequestImpl(url, ByRef request_body As String, ByRef reply_body As 
     'Call xhr.setProxy("2", Environ$("http_proxy"))  ', "<local>")
     
     Dim http_verb: http_verb = IIf(Len(request_body) = 0, "GET", "POST")
-    Call xhr.Open(http_verb, url, False)
+    Call xhr.Open(http_verb, url, False, user, pwd)
     
     'Call xhr.setProxyCredentials(Environ$("http_proxy_user"), Environ$("http_proxy_password"))
     
@@ -43,9 +43,10 @@ Function HttpRequestImpl(url, ByRef request_body As String, ByRef reply_body As 
     If Len(request_body) > 0 Then
         If Left(request_body, 1) = "{" And Right(request_body, 1) = "}" Then
             Call xhr.setRequestHeader("Content-type", "application/json")
-        End If
-        If Left(request_body, 1) = "[" And Right(request_body, 1) = "]" Then
+        ElseIf Left(request_body, 1) = "[" And Right(request_body, 1) = "]" Then
             Call xhr.setRequestHeader("Content-type", "application/json")
+        Else
+            Call xhr.setRequestHeader("Content-type", "text/plain")
         End If
     End If
     
@@ -127,22 +128,29 @@ Function xlfct_run(xlfct, xlargs)
 End Function
 
 Function text_to_range(txt As String)
-    Dim i, sep As String, vec
+    Dim i As Long, j As Long, sep As String, sep2 As String, vec, vec_0, vec_i
     
     sep = Chr$(13) ' vbCr
     sep = vbNewLine
     sep = Chr$(10) ' vbLf
     
-    vec = Split(txt, sep)
+    sep2 = vbTab
     
-    ReDim rng(LBound(vec) To UBound(vec), 0 To 0)
+    vec = Split(txt, sep)
+    vec_0 = Split(vec(LBound(vec)), sep2)
+    
+    ReDim rng(LBound(vec) To UBound(vec), LBound(vec_0) To UBound(vec_0))
     For i = LBound(vec) To UBound(vec)
-        rng(i, 0) = vec(i)
-        If TypeName(vec(i)) = "String" Then
-            If Len(vec(i)) > 255 Then
-                rng(i, 0) = Left(vec(i), 253) & ".."
+        vec_i = Split(vec(i), sep2)
+        For j = LBound(vec_i) To WorksheetFunction.Min(UBound(vec_0), UBound(vec_i))
+    
+            rng(i, j) = vec_i(j)
+            If TypeName(rng(i, j)) = "String" Then
+                If Len(rng(i, j)) > 255 Then
+                    rng(i, j) = Left(rng(i, j), 253) & ".."
+                End If
             End If
-        End If
+        Next j
     Next i
     
     text_to_range = rng
@@ -151,14 +159,22 @@ End Function
 Function range_to_text(rng)
     Dim txt As String, i As Long, j As Long
     
-    For i = LBound(rng) To UBound(rng)
-        For j = LBound(rng, 2) To UBound(rng, 2)
-            txt = txt & rng(i, j)
-            If j < UBound(rng, 2) Then txt = txt & vbTab
-        Next j
-        If i < UBound(rng) Then txt = txt & vbNewLine
-    Next i
+    If TypeName(rng) = "Range" Then
+        rng = rng.Value
+    End If
     
+    If TypeName(rng) = "Variant()" Then
+        For i = LBound(rng) To UBound(rng)
+            For j = LBound(rng, 2) To UBound(rng, 2)
+                txt = txt & rng(i, j)
+                If j < UBound(rng, 2) Then txt = txt & vbTab
+            Next j
+            If i < UBound(rng) Then txt = txt & vbNewLine
+        Next i
+    Else
+        txt = rng
+    End If
+
     range_to_text = txt
 End Function
 

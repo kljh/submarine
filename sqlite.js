@@ -15,7 +15,9 @@ function sqlite_install(app) {
         var prms = req.method=="GET" ? req.query : req.body;
         sqlite_exec(prms.db, prms.stmt, prms.args, prms)
         .then(function(data) { res.send(data); })
-        .catch(function(err) { res.send({ error: err }); })
+        .catch(function(err) { 
+            res.status(500); res.send({ msg: err.message, error: err }); 
+        })
     });
 
     app.use('/sqlite_insert', function (req, res) {
@@ -23,7 +25,7 @@ function sqlite_install(app) {
         var rows = prms.rows.substr ? JSON.parse(prms.rows) : prms.rows;
         sqlite_insert_or_update("insert", prms.db, prms.table, rows, prms)
         .then(function(data) { res.send(data); })
-        .catch(function(err) { res.send({ error: err }); })
+        .catch(function(err) { res.status(500); res.send({ error: err }); })
     });
 
     app.use('/sqlite_update', function (req, res) {
@@ -31,9 +33,28 @@ function sqlite_install(app) {
         var rows = prms.rows.substr ? JSON.parse(prms.rows) : prms.rows;
         sqlite_insert_or_update("update", prms.db, prms.table, rows, prms)
         .then(function(data) { res.send(data); })
-        .catch(function(err) { res.send({ error: err }); })
+        .catch(function(err) { res.status(500); res.send({ error: err }); })
     });
 
+    app.use('/sqlite_table', function (req, res) {
+        var prms = req.query.db ? req.query : req.body; // the prms are where the db name is !
+        var rows = prms.rows || req.body; // except maybe for the table rows
+        if (rows.substr) try { rows = JSON.parse(rows); } catch (e) {}
+        if (rows.substr) try { rows = from_tsv(rows); } catch (e) {}
+
+        var headers = rows[0];
+        var sql_drop = "drop table if exists "+prms.table;
+        //var sql_stmt = "create table ? ("+headers.map(_=>"?").join(",")+")";
+        //var sql_args = [prms.table].concat(headers); 
+        var sql_stmt = "create table "+prms.table+" ("+headers.join(",")+")";
+        var sql_args = []; 
+        
+        sqlite_exec(prms.db, sql_drop, [], prms)
+        .then(_ => sqlite_exec(prms.db, sql_stmt, prms.args, prms))
+        .then(_ => sqlite_insert_or_update("insert", prms.db, prms.table, rows, prms))
+        .then(function(data) { res.send(data); })
+        .catch(function(err) { res.status(500); res.send({ msg: err.message, error: err }); })
+    });
 }
 
 
@@ -76,6 +97,7 @@ function sqlite_exec(db_path, stmt_txt, opt_stmt_args, opt_prms) {
                         reject(err); 
                     } else {
                         if (prms.to_array2d) resolve(to_array2d(rows));
+                        else if (prms.to_tsv) resolve(to_tsv(to_array2d(rows)));
                         else if (prms.to_html) resolve(to_html(to_array2d(rows)));
                         else resolve(rows); 
                     }
@@ -99,6 +121,7 @@ function sqlite_insert_or_update(insert_or_update, db_path, table_name, table_ro
                 reject(err); 
         }
 
+        var mode = prms.read_only ? sqlite3.OPEN_READONLY : sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE;
         var db = db_path ? new sqlite3.Database(db_path, mode, err_handler) : memory_db;
 
         // !! To do?? : add a BEGIN TRANSACTION and COMMIT ? in a db.serialize
@@ -184,7 +207,7 @@ function to_array2d(v) {
 function objectarray_to_array2d(v) {
     var hdr = Object.keys(v[0])
     var res = [ hdr ];
-    for (o of v) 
+    for (var o of v) 
         res.push( hdr.map(k => o[k]) );
     return res;
 }
@@ -198,6 +221,14 @@ function array2d_to_objectarray(v) {
             row[hdrs[j]] = v[i][j]
     }
     return res;
+}
+
+function from_tsv(txt) {
+    return txt.replace(/\r/g, '').split("\n").map(row => row.split("\t"));
+}
+
+function to_tsv(arr) {
+    return arr.map(row => row.join("\t")).join("\n");
 }
 
 function to_html(arr) {

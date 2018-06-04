@@ -74,6 +74,7 @@ def main():
 		fo.write(input_data.encode('utf-8'))
 		fo.close()
 		
+		print("run_command", args, input_data_file)
 		output_data = run_command(args, input_data_file)
 		
 		#print("input:\n"+input_data+"\n")
