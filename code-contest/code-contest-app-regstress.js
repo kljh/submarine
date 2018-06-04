@@ -81,7 +81,7 @@ function submit_output_data(output_data, previous_steps) {
 		pred[v].forEach(p => {
 			if (!state[p])  throw new Error("can't put stone in "+v+": no stone in predecessor "+p+" at step "+idx+". "+line);
 		});
-		if (state[v])  throw new Error("already a stone in "+v+" at step "+idx+". "+line);
+		//if (state[v])  throw new Error("already a stone in "+v+" at step "+idx+". "+line);
 		if (tmp.length==1) {
 			// putting a new stone
 			if (nbStones==0)  throw new Error("no more stones at step "+idx+". "+line);
