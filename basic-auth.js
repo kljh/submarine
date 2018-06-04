@@ -19,7 +19,8 @@ function check_autorization(request, response) {
         var opaque = "server-says-quote-this-text-when-replying";
         console.log("request_authentication: reply 401 Unauthorized", request.path);
         response.status(401)
-        response.writeHeader(401, { "WWW-Authenticate": "Digest algorithm=\"MD5\", realm=\""+realm+"\", nonce=\""+nonce+"\", opaque=\""+opaque+"\", qop=\"auth\"" });
+        response.writeHeader(401, { "WWW-Authenticate": "Basic realm=\""+realm+"\"" });
+        //response.writeHeader(401, { "WWW-Authenticate": "Digest algorithm=\"MD5\", realm=\""+realm+"\", nonce=\""+nonce+"\", opaque=\""+opaque+"\", qop=\"auth\"" });
         response.write("401 Unauthorized\n");
         response.end();
         
