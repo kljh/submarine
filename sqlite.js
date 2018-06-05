@@ -64,13 +64,14 @@ function sqlite_exec(db_path, stmt_txt, opt_stmt_args, opt_prms) {
     var prms = opt_prms || {};
 
     return new Promise(function(resolve, reject) {
-        function err_handler(err) { 
+        function err_handler(msg, err) { 
+            console.error(msg, err);
             if (err) 
                 reject(err); 
         }
 
         var mode = prms.read_only ? sqlite3.OPEN_READONLY : sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE;
-        var db = db_path ? new sqlite3.Database(db_path, mode, err_handler) : memory_db;
+        var db = db_path ? new sqlite3.Database(db_path, mode, err => err_handler("open db", err)) : memory_db;
         
         db.serialize(function() {
             /*
@@ -94,7 +95,8 @@ function sqlite_exec(db_path, stmt_txt, opt_stmt_args, opt_prms) {
             db.all(stmt_txt, stmt_args, 
                 function(err, rows) { 
                     if (err) {
-                        reject(err); 
+                        err_handler("stmt "+JSON.stringify(stmt_txt)+" args "+JSON.stringify(stmt_args), err)
+                        //reject(err); 
                     } else {
                         if (prms.to_array2d) resolve(to_array2d(rows));
                         else if (prms.to_tsv) resolve(to_tsv(to_array2d(rows)));
@@ -107,7 +109,7 @@ function sqlite_exec(db_path, stmt_txt, opt_stmt_args, opt_prms) {
 
         });
         if (db_path)
-            db.close(err_handler);
+            db.close(err => err_handler("close db", err));
     });
 }
 

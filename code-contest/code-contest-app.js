@@ -46,8 +46,21 @@ function code_contest_register(req, res) {
     .catch(err => { res.status(500); res.send("ERROR: "+(err.stack||err)); });
 }
 
+function code_contest_check_creds(req, res) {
+    if (req.query.uid.indexOf("test")==0)
+        return true;
+    
+    //var users = await sqlite.sqlite_exec(db, "SELECT * FROM participants VALUES");
+
+    res.status(401);
+    res.send("ERROR: wrong user or password");
+    return false;
+}
+
 // save source files to disk
 function code_contest_upload_source(req, res) {
+    if (!code_contest_check_creds(req, res)) return;
+
 	var git;
 	try { git = require('nodegit'); } catch (e) { console.warn("require('nodegit'): "+(e.stack||e)); }
 	
@@ -75,6 +88,8 @@ function code_contest_upload_source(req, res) {
 
 // get input data
 function code_contest_get_input_data(req, res) {
+    if (!code_contest_check_creds(req, res)) return;
+
     //console.log("code_contest_get_input_data", req.query, req.body);
     var problem_handler = require("./code-contest-app-"+req.query.pid+".js");
     
@@ -106,6 +121,8 @@ function code_contest_get_input_data(req, res) {
 
 // submit output data
 function code_contest_submit_output_data(req, res) {
+    if (!code_contest_check_creds(req, res)) return;
+
     //console.log("code_contest_submit_output_data", req.query, req.body);
     var timestamp = (new Date()).toISOString();
     

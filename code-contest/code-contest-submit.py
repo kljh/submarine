@@ -51,6 +51,7 @@ def main():
 			print("Path to source does not exist")
 			sys.exit(1)
 		
+		print("Uploading src..")
 		headers = { "Content-Type": "application/octet-stream" }
 		for src in args.src: 
 			with open(src, "rb") as fi:
@@ -59,6 +60,8 @@ def main():
 			response = requests.post(args.srv+"code-contest/upload-source", data=src_bs, headers=headers, 
 				params={ "uid": args.uid, "pid": args.pid, "attempt": attempt, "src": src, "email" : args.email})
 			print(args.srv+"code-contest/upload-source", src, response.status_code, response.text)
+			if response.status_code>299: sys.exit(1)
+		print("Upload complete.\n")
 
 	iter = 0	
 	while True:
