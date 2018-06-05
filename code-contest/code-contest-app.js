@@ -17,17 +17,21 @@ module.exports = function(app) {
     app.use('/code-contest/submit-output-data', code_contest_submit_output_data);
 
     var tmp_dir = path.join(__dirname, ".code-contest");
-    if (!fs.existsSync(tmp_dir))
-        fs.mkdirSync(tmp_dir); 
-
-	Promise.resolve()
-	//.then(_ => sqlite.sqlite_exec(db, "DROP TABLE IF EXISTS participants"))
-	//.then(_ => sqlite.sqlite_exec(db, "DROP TABLE IF EXISTS submissions"))
-	//.then(_ => sqlite.sqlite_exec(db, "DROP TABLE IF EXISTS problems"))
-	.then(_ => sqlite.sqlite_exec(db, "CREATE TABLE IF NOT EXISTS participants ( user_id, user_name PRIMARY KEY, timestamp )"))
-	.then(_ => sqlite.sqlite_exec(db, "CREATE TABLE IF NOT EXISTS submissions ( user_id, problem_id, attempt, timestamp, completed, result )"))
-	.then(_ => sqlite.sqlite_exec(db, "CREATE TABLE IF NOT EXISTS problems ( problem_id, problem_type, weight )"))
-	.catch(err => { console.error("ERROR: "+(err.stack||err)); });
+    if (!fs.existsSync(tmp_dir)) {
+        fs.mkdir(tmp_dir, err => {
+            if (err)
+                return console.error("ERROR MKDIR: "+(err.stack||err));
+            
+            Promise.resolve()
+            //.then(_ => sqlite.sqlite_exec(db, "DROP TABLE IF EXISTS participants"))
+            //.then(_ => sqlite.sqlite_exec(db, "DROP TABLE IF EXISTS submissions"))
+            //.then(_ => sqlite.sqlite_exec(db, "DROP TABLE IF EXISTS problems"))
+            .then(_ => sqlite.sqlite_exec(db, "CREATE TABLE IF NOT EXISTS participants ( user_id, user_name PRIMARY KEY, timestamp )"))
+            .then(_ => sqlite.sqlite_exec(db, "CREATE TABLE IF NOT EXISTS submissions ( user_id, problem_id, attempt, timestamp, completed, result )"))
+            .then(_ => sqlite.sqlite_exec(db, "CREATE TABLE IF NOT EXISTS problems ( problem_id, problem_type, weight )"))
+            .catch(err => { console.error("ERROR: "+(err.stack||err)); });
+        });
+    }
 };
 
 // register a team (name, password, etc.)

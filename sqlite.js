@@ -205,6 +205,8 @@ function to_array2d(v) {
 }
 
 function objectarray_to_array2d(v) {
+    if (!v) return null;
+    if (v.length==0) return [[]];
     var hdr = Object.keys(v[0])
     var res = [ hdr ];
     for (var o of v) 
