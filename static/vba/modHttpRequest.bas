@@ -157,8 +157,8 @@ Function range_to_text(rng)
     If TypeName(rng) = "Variant()" Then
         For i = LBound(rng) To UBound(rng)
             For j = LBound(rng, 2) To UBound(rng, 2)
-                If TypeName(rng(i, j)) = Date Then
-                    txt = txt & (rng(i, j) * 1#)
+                If TypeName(rng(i, j)) = "Date" Then
+                    txt = txt & (rng(i, j) * 1)
                 Else
                     txt = txt & rng(i, j)
                 End If
