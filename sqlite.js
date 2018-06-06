@@ -65,9 +65,10 @@ function sqlite_exec(db_path, stmt_txt, opt_stmt_args, opt_prms) {
 
     return new Promise(function(resolve, reject) {
         function err_handler(msg, err) { 
-            console.error(msg, err);
-            if (err) 
+            if (err) {
+                console.error(msg, err);
                 reject(err); 
+            }
         }
 
         var mode = prms.read_only ? sqlite3.OPEN_READONLY : sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE;

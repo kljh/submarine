@@ -1,8 +1,11 @@
 'use strict';
 
 const fs = require('fs');
-var credentials = { "public": "public" };
-try { credentials = JSON.parse(fs.readFileSync('.auth')); } catch (e) { console.error(""+e); }
+var credentials = {};
+if (fs.existsSync('.auth'))
+    credentials = JSON.parse(fs.readFileSync('.auth')); 
+if (process.env.HTTP_USER && process.env.HTTP_PASSWORD) 
+    credentials[process.env.HTTP_USER] = process.env.HTTP_PASSWORD;
 
 module.exports = {
     check_autorization: check_autorization
@@ -43,7 +46,7 @@ function check_autorization(request, response) {
     var bAuth = false;
     if (auth.indexOf("Basic")==0) {
         var auth64 = auth.substr(6);
-        console.log("authorization base64: "+auth64);
+        //console.log("authorization base64: "+auth64);
 
         //var auth = base64_decode(auth64);
         var auth_buff = new Buffer(auth64, 'base64');  // convert base64 to raw binary data held in a string
@@ -54,10 +57,10 @@ function check_autorization(request, response) {
         var pwd = tmp[1];
         var pwd_expected = credentials[user];
 
-        console.log("authorization received: "+auth);
-        console.log("authorization expected: "+user+":"+pwd_expected);
+        //console.log("authorization received: "+auth);
+        //console.log("authorization expected: "+user+":"+pwd_expected);
         bAuth = pwd==pwd_expected;
-        console.log("authorization passed: "+bAuth);
+        //console.log("authorization passed: "+bAuth);
     } else if (auth.indexOf("Digest")==0) {
         var auth_split = auth.substr(7).split(",");
         var auth_data = {};

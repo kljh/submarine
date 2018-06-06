@@ -1,15 +1,6 @@
 Attribute VB_Name = "modHttpRequest"
 Option Explicit
 
-Sub f(ByRef a As String)
-    a = "flkj"
-End Sub
-Sub sdakj()
-    Dim s As String
-    Call f(s)
-    Debug.Print s
-    
-End Sub
 Function HttpRequest(url, Optional body = "", Optional user As String = "", Optional pwd As String = "")
     Dim request_body As String, reply_body As String, error_body As String
     request_body = range_to_text(body)
@@ -166,7 +157,11 @@ Function range_to_text(rng)
     If TypeName(rng) = "Variant()" Then
         For i = LBound(rng) To UBound(rng)
             For j = LBound(rng, 2) To UBound(rng, 2)
-                txt = txt & rng(i, j)
+                If TypeName(rng(i, j)) = Date Then
+                    txt = txt & (rng(i, j) * 1#)
+                Else
+                    txt = txt & rng(i, j)
+                End If
                 If j < UBound(rng, 2) Then txt = txt & vbTab
             Next j
             If i < UBound(rng) Then txt = txt & vbNewLine

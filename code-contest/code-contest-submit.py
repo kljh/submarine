@@ -110,6 +110,9 @@ def get_input(args):
 	if r.status_code==404:
 		print("STATUS: COMPLETE. NO MORE INPUT.")
 		return None
+	elif r.status_code==500: 
+		print("ERROR GETTING INPUT.\n"+"DID YOU INPUT CORRECT PROBLEM ID?\n\n"+r.text+"\n")
+		sys.exit(1)
 	else:
 		return r.text
 
