@@ -77,7 +77,7 @@ def main():
 		fo.write(input_data.encode('utf-8'))
 		fo.close()
 		
-		print("run_command", args, input_data_file)
+		print("run_command:\n" + " ".join(args.cmd) + " " + input_data_file)
 		output_data = run_command(args, input_data_file)
 		
 		#print("input:\n"+input_data+"\n")
@@ -97,6 +97,7 @@ def main():
 			sys.exit(0)
 		else:
 			print("STATUS", iter, ": RECORDED", msg)
+		print("")
 
 		if iterate != True:
 			print("DONE")

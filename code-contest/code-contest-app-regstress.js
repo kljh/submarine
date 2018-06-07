@@ -26,7 +26,7 @@ var test_input_files = [
 	// */
 	];
 
-var test_input = test_input_files.map(file => fs.readFileSync('regstress\\'+file, 'utf8'));
+var test_input = test_input_files.map(file => fs.readFileSync('code-contest/regstress/'+file, 'utf8')+"\n");
 
 function get_input_data(previous_steps) {
 	var iteration = previous_steps.length
@@ -217,7 +217,7 @@ function generate_save_file(n, m) {
 	var m_min = calc_min_nbstones(pred);
 	
 	var txt = generate_file(succ, m_min+m);
-	var path = 'regstress\\random_'+n+'v_'+m+'r.txt';
+	var path = 'regstress/random_'+n+'v_'+m+'r.txt';
 	fs.writeFileSync(path, txt, 'utf8');
 	console.log(path, m_min);
 }
@@ -244,6 +244,6 @@ function generate_dot(txt, file) {
 }
 function generate_dots()  {
 	for (var i=0; i<test_input_files.length; i++) 
-		fs.writeFileSync('regstress\\'+test_input_files[i]+".dot", generate_dot(test_input[i], test_input_files[i]), 'utf8');
+		fs.writeFileSync('regstress/'+test_input_files[i]+".dot", generate_dot(test_input[i], test_input_files[i]), 'utf8');
 }
-generate_dots();
+//generate_dots();
