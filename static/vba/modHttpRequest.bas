@@ -159,6 +159,8 @@ Function range_to_text(rng)
             For j = LBound(rng, 2) To UBound(rng, 2)
                 If TypeName(rng(i, j)) = "Date" Then
                     txt = txt & (rng(i, j) * 1)
+                ElseIf TypeName(rng(i, j)) = "Boolean" Then
+                    txt = txt & IIf(rng(i, j), "true", "false")
                 Else
                     txt = txt & rng(i, j)
                 End If

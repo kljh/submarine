@@ -229,7 +229,7 @@ function array2d_to_objectarray(v) {
 }
 
 function from_tsv(txt) {
-    return txt.replace(/\r/g, '').split("\n").map(row => row.split("\t"));
+    return txt.replace(/\r/g, '').split("\n").map(row => row.split("\t").map(x => { try { return JSON.parse(x); } catch(e) { return x; } }));
 }
 
 function to_tsv(arr) {
