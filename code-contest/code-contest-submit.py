@@ -7,6 +7,8 @@ import argparse
 import subprocess
 import requests
 
+from threading import Timer
+
 now = datetime.datetime.utcnow() #datetime.timezone.utc)
 attempt = "ATTEMPT-"+now.isoformat()
 
@@ -20,6 +22,7 @@ def main():
 	parser.add_argument('--pwd', dest='pwd', required=required, help='user password', default="test")
 	parser.add_argument('--pid', dest='pid', required=required, help='problem ID' ) # , default="pi")
 	parser.add_argument('--cmd', dest='cmd', required=required, help='path to command to execute', nargs='+' ) # , default=["node", "solution.js"])
+	parser.add_argument('--timeout', dest='timeout', help='timeout in seconds to execute command', default=10)
 	parser.add_argument('--src', dest='src', required=required, help='path to source code', nargs='+' )
 	parser.add_argument('--email', dest='email', help='email in Git', default=None )
 	parser.add_argument('--msg', dest='msg', help='message in Git', default=None )
@@ -124,8 +127,19 @@ def run_command(args, input_data_file):
 	#p =subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) # , encoding='utf-8'  Python 3.6 only
 	# bytes_in = input_data.encode('utf-8')
 	# bytes_out = p.communicate(input=bytes_in)[0]
-	
-	bytes_out = subprocess.check_output(cmd)
+	# bytes_out = subprocess.check_output(cmd)
+
+	kill = lambda process: process.kill()
+	p = subprocess.Popen(cmd, stdout = subprocess.PIPE, stderr=subprocess.PIPE)
+
+	timer = Timer(args.timeout, kill, [p])
+
+	try:
+		timer.start()
+		bytes_out = p.communicate()[0]
+	finally:
+		timer.cancel()
+
 	
 	output_data = bytes_out.decode('utf-8').replace('\r', '')	
 	return output_data
