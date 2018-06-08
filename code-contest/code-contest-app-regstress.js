@@ -15,18 +15,31 @@ var test_input_files = [
 	"cache_15v_4r.txt",
 	"cache_15v_3r.txt",
 	"cache_15v_2r.txt",
-	"func_16v_10r.txt",
-	"func2_33v_5r.txt",
-	"merge_60v_5r.txt", 
-	//*
-	"random_10v_3r.txt",
+	"random_10v_10r.txt",
+    "random_10v_3r.txt",
+    "random_15v_5r.txt",
+    "random_15v_2r.txt",
+    "random_15v_0r.txt",
+    "func_16v_8r.txt",
+	"func_16v_6r.txt",
+	"func_16v_4r.txt",
 	"random_20v_5r.txt",
-	"random_75v_15r.txt",
-	"random_200v_25r.txt",
-	// */
+    "random_20v_2r.txt",
+    "random_20v_0r.txt",
+    "random_25v_5r.txt",
+    "random_25v_0r.txt",
+    "random_30v_3r.txt",
+    "random_40v_3r.txt",
+    "random_50v_5r.txt",
+    "merge_60v_5r.txt", 
+	"random_75v_10r.txt",
+    "random_125v_10r.txt",
+    "random_200v_10r.txt"
 	];
 
+try{
 var test_input = test_input_files.map(file => fs.readFileSync('code-contest/regstress/'+file, 'utf8')+"\n");
+} catch (e) {}
 
 function get_input_data(previous_steps) {
 	var iteration = previous_steps.length
@@ -134,12 +147,15 @@ module.exports = {
 function calc_min_nbstones(pred) {
 	var n = pred.length;
 	var nb = new Array(n);
-
+	
+	var bDisp = n<15;
+	if (bDisp) console.log("pred", pred);
+	
 	// root vertices 
 	for (var i=0; i<n; i++) 
 		if (pred[i].length==0) {
 			nb[i] =1
-			console.log(">", i, " => ", nb[i]);
+			if (bDisp) console.log(">", i, " => ", nb[i]);
 		}
 				
 	
@@ -150,14 +166,14 @@ function calc_min_nbstones(pred) {
 		for (var i=0; i<n; i++) {
 			if (nb[i]) continue; // already done
 			
-			var minNb = pred[i].reduce((acc, k)=> Math.min(acc, nb[k]));
-			var maxNb = pred[i].reduce((acc, k)=> Math.max(acc, nb[k]));
+			var minNb = pred[i].reduce((acc, k)=> Math.min(acc, nb[k]), n);
+			var maxNb = pred[i].reduce((acc, k)=> Math.max(acc, nb[k]), 0);
 			
 			if (minNb && maxNb) {
 				// can calculate
 				var nbParents = pred[i].length;
 				nb[i] = Math.max(maxNb, nbParents-1+minNb);
-				console.log(">", i, "nbParents", nbParents, "minNb", minNb, "maxNb", maxNb, " => ", nb[i], "pred[i]", pred[i])
+				if (bDisp) console.log(">", i, "nbParents", nbParents, "minNb", minNb, "maxNb", maxNb, " => ", nb[i], "pred[i]", pred[i])
 				bDone = false;
 			}
 		}
@@ -170,16 +186,26 @@ function generate_random(n, prms) {
 	for (var i=0; i<n+1; i++) {
 		succ[i] = [];
 	}
+	// a pivot node in the middle
+	var p = Math.floor(n*(0.3 + 0.4*Math.random()));
+	var pprob = Math.max(0.1, Math.min(7/n, 0.4));
+	console.log("pivot", p, n);
+	for (var i=1; i<n-1; i++) {
+		if (Math.random()<pprob) {
+			if (i<p)  succ[i].push(p);
+			if (p<i)  succ[p].push(i);
+		}
+	}
 	// pick a successor after i
 	for (var i=n-1; i>0; i--) {
-		var m = n - i;
-		var ja = i + 1+ Math.floor(Math.random()*m);
+		var m = Math.min(n - i, Math.random()<0.75?5:n); // try to keep some locality
+		var ja = i + 1+ Math.floor(Math.random()*m); 
 		var b = succ[i].indexOf(ja)==-1; 
 		if (b) succ[i].push(ja);
 	}
 	// pick a predecessor before i
 	for (var i=n; i>1; i--) {
-		var m = i - 1;
+		var m = Math.min(i - 1, Math.random()<0.75?5:n); // try use more first nodes
 		var jb = 1 + Math.floor(Math.random()*m);
 		var b = succ[jb].indexOf(i)==-1; 
 		if (b) succ[jb].push(i);
@@ -187,7 +213,7 @@ function generate_random(n, prms) {
 	return succ;
 }
 function pred_from_succ(succ) {
-	console.log("succ", succ)
+	//console.log("succ", succ)
 	var n = succ.length;
 	var pred = new Array(n);
 	for (var i=0; i<n; i++) {
@@ -199,7 +225,7 @@ function pred_from_succ(succ) {
 			pred[s].push(i);
 		}
 	}
-	console.log("pred", pred);
+	//console.log("pred", pred);
 	return pred;
 }
 function generate_file(succ, m) {
@@ -219,14 +245,10 @@ function generate_save_file(n, m) {
 	var txt = generate_file(succ, m_min+m);
 	var path = 'regstress/random_'+n+'v_'+m+'r.txt';
 	fs.writeFileSync(path, txt, 'utf8');
+	test_input_files.push(path.split('/').pop());
 	console.log(path, m_min);
 }
-/*
-generate_save_file(10, 3);
-generate_save_file(20, 5);
-generate_save_file(75, 15);
-generate_save_file(200, 25);
-*/
+
 
 function generate_dot(txt, file) {
 	//console.log(file)
@@ -243,7 +265,29 @@ function generate_dot(txt, file) {
 		+ "}"
 }
 function generate_dots()  {
-	for (var i=0; i<test_input_files.length; i++) 
+	var test_input = test_input_files.map(file => fs.readFileSync('regstress/'+file, 'utf8')+"\n");
+	for (var i=0; i<test_input_files.length; i++) {
 		fs.writeFileSync('regstress/'+test_input_files[i]+".dot", generate_dot(test_input[i], test_input_files[i]), 'utf8');
+	}
 }
-//generate_dots();
+function generate_all() {
+	generate_save_file(10, 10);
+	generate_save_file(10, 3);
+	generate_save_file(15, 5);
+	generate_save_file(15, 2);
+	generate_save_file(15, 0);
+	generate_save_file(20, 5);
+	generate_save_file(20, 2);
+	generate_save_file(20, 0);
+	generate_save_file(25, 5);
+	generate_save_file(25, 0);
+	generate_save_file(30, 3);
+	generate_save_file(40, 3);
+	generate_save_file(50, 5);
+	generate_save_file(75, 10);
+	generate_save_file(125, 10);
+	generate_save_file(200, 10);
+	generate_dots();
+	console.log(JSON.stringify(test_input_files, null, 4));
+}
+//generate_all();
