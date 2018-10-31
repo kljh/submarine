@@ -35,14 +35,14 @@ function root_path() {
     return module.exports.root_path || path.join(process.cwd(), module.exports.bDebug?"debug":"");
 }
 
-function webdav_log_request(req) { 
+function webdav_log_request(req) {
     console.log("request headers:\n"+JSON.stringify(req.headers,null,4)+"\n");
 }
 
 function webdav_options(req, res) {
     var opts = {
         'Content-Length': '0',
-        'Allow': 'HEAD, GET, PUT, POST, DELETE, OPTIONS, PROPFIND, PROPPATCH, MKCOL, MOVE, COPY, LOCK, UNLOCK, TRACE, REPORT', 
+        'Allow': 'HEAD, GET, PUT, POST, DELETE, OPTIONS, PROPFIND, PROPPATCH, MKCOL, MOVE, COPY, LOCK, UNLOCK, TRACE, REPORT',
         'DAV': '1,2',
         'MS-Author-Via': 'DAV', // mandatory for WinXP
         //Allow Content-Type: text/xml
@@ -57,7 +57,7 @@ function webdav_options(req, res) {
 function webdav_put(req, res) {
     var url_path = unescape(url.parse(req.url).pathname);
     var full_path = path.join(root_path(), url_path);
-    
+
     var content_type = req.headers["content-type"];
     var content_length = req.headers["content-length"];
     var content_range = req.headers["content-range"] || req.headers["range"];
@@ -82,13 +82,13 @@ function webdav_put(req, res) {
     try {
         if (content_range_start) {
             // fs.appendFile
-            fs.open(full_path, 'a', function (erro, f) { 
+            fs.open(full_path, 'a', function (erro, f) {
                 if (!erro) {
                     fs.write(f, req.body, 0, content_length, content_range_start, function(errw) {
                         if (!errw) {
                             fs.close(f, function(errc) {
                                 if (erro || errw || errc) {
-                                    console.error(err);      
+                                    console.error(err);
                                     res.writeHead(500, {});
                                     res.send({ error: err, url: url_path });
                                     res.end();
@@ -103,7 +103,7 @@ function webdav_put(req, res) {
         } else {
             fs.writeFile(full_path, req.body, function(err) {
                 if (err) {
-                    console.error(err);      
+                    console.error(err);
                     res.writeHead(500, {});
                     res.send({ error: err, url: url_path });
                     res.end();
@@ -131,7 +131,7 @@ function webdav_mkcol(req, res) {
         res.writeHead(status_forbidden, {});
         res.end("");
         return;
-    } 
+    }
 
     try {
         //fs.mkdirSync(full_path);
@@ -155,7 +155,7 @@ function recursive_mkcol(folder_path) {
     for (var i=1; i<path_split.length; i++) {
         var curr_path = path_split.slice(0, i+1).join(path.sep);
         if (!fs.existsSync(curr_path)) {
-            fs.mkdirSync(curr_path); 
+            fs.mkdirSync(curr_path);
         } else {
             var stat = fs.statSync(curr_path);
             if (stat.isDirectory()) {
@@ -174,7 +174,7 @@ function webdav_move(req, res) {
     var src_url_path = unescape(url.parse(req.url).pathname);
     var src_full_path = path.join(root_path(), src_url_path);
     console.log("HTTP MOVE src: "+src_full_path);
-    
+
     var dst_url_path = unescape(req.headers['destination']);
     console.log("HTTP MOVE dst: "+dst_url_path);
     if (dst_url_path.substr(0,4)=="http") {
@@ -186,7 +186,7 @@ function webdav_move(req, res) {
     }
     var dst_full_path = path.join(root_path(), dst_url_path);
     console.log("HTTP MOVE dst: "+dst_full_path);
-    
+
     try {
         fs.renameSync(src_full_path, dst_full_path);
 
@@ -206,7 +206,7 @@ function webdav_copy(req, res) {
     var src_url_path = unescape(url.parse(req.url).pathname);
     var src_full_path = path.join(root_path(), src_url_path);
     console.log("HTTP COPY src: "+src_full_path);
-    
+
     var dst_url_path = unescape(req.headers['destination']);
     console.log("HTTP COPY dst: "+dst_url_path);
     if (dst_url_path.substr(0,4)=="http") {
@@ -218,7 +218,7 @@ function webdav_copy(req, res) {
     }
     var dst_full_path = path.join(root_path(), dst_url_path);
     console.log("HTTP COPY dst: "+dst_full_path);
-    
+
     try {
         copy_file(src_full_path, dst_full_path);
 
@@ -270,9 +270,9 @@ function webdav_delete(req, res) {
         res.writeHead(status_not_found, {});
         res.end("");
         return;
-    } 
+    }
 
-    
+
     try {
         var stat = fs.statSync(full_path);
         if (stat.isDirectory()) {
@@ -297,14 +297,14 @@ function webdav_delete(req, res) {
 
 function recursive_delete(folder_path) {
     var files = fs.readdirSync(folder_path);
-    
+
     for (var i=0, n=files.length; i<n; i++) {
         var full_path = path.join(folder_path,files[i]);
         console.log("del path="+JSON.stringify(full_path));
        // try {
             var stat = fs.statSync(full_path);
             console.log("del dir="+stat.isDirectory()+" path="+JSON.stringify(full_path));
-            if (stat.isDirectory()) 
+            if (stat.isDirectory())
                 recursive_delete(full_path);
             else
                 fs.unlinkSync(full_path);
@@ -316,13 +316,13 @@ function recursive_delete(folder_path) {
 
 function webdav_propfind(req, res) {
     var xml_header =
-        '<?xml version="1.0" encoding="utf-8"?>\n' + 
+        '<?xml version="1.0" encoding="utf-8"?>\n' +
         '<D:multistatus xmlns:D="DAV:">\n';
-    var xml_footer = 
+    var xml_footer =
         '</D:multistatus>';
-    
+
     var depth = req.headers['depth'] * 1;
-    
+
     var url_path = unescape(url.parse(req.url).pathname);
     var full_path = path.join(root_path(), url_path);
 
@@ -335,17 +335,17 @@ function webdav_propfind(req, res) {
         res.end(reply_body);
         return;
     }
-    
+
     if (depth===0) {
 
         var reply_body = xml_header + webdav_propfind_response(url_path, req) + xml_footer;;
 
         res.writeHead(207, {
-            'Content-type': 'application/xml; charset=utf-8', 
+            'Content-type': 'application/xml; charset=utf-8',
             'DAV': '1,2'
         });
         res.end(reply_body);
-   
+
     } else {
         // depth > 0
 
@@ -364,20 +364,20 @@ function webdav_propfind(req, res) {
             var from_url = url_path + ( url_path.substr(-1)=="/" ? "" : "/" );
             for (var i=0, n=f.length; i<n; i++) {
                 reply_body += webdav_propfind_response(url.resolve(from_url, escape(f[i])), req);
-            } 
+            }
 
             reply_body += xml_footer;
-        
+
             var multi_status = 207;  // Multi-Status
             res.writeHead(multi_status, {
-                'Content-type': 'application/xml; charset=utf-8', 
+                'Content-type': 'application/xml; charset=utf-8',
                 'DAV': '1,2'
             });
 
             //console.log(reply_body)
             res.end(reply_body);
         });
-                
+
     }
 
 }
@@ -391,10 +391,10 @@ function webdav_propfind_response(url_path, req) {
     var last = stat ? stat.mtime.toUTCString() : undefined; // Sat, 26 Dec 2015 15:38:20 GMT+00:00
     var crea = stat ? stat.ctime.toISOString() : undefined; // 2017-08-30T21:13:09Z
     var coll = stat ? stat.isDirectory() : false;
-    
+
     var href_prefix = req.protocol + "://" + req.headers.host; // "http://localhost:8080";
     var href = href_prefix + url_path + ( coll && !endsWith(url_path,"/") ? "/" : "" );
-    
+
     var path_split = url_path.split("/");
     var name = path_split.pop();
     if (name=="") name = path_split.pop();
@@ -402,9 +402,9 @@ function webdav_propfind_response(url_path, req) {
 
     // skip invisible files
     if (name[0]=='.')
-        return ""; 
+        return "";
 
-    var lock_stuff = 
+    var lock_stuff =
         '        <D:lockdiscovery></D:lockdiscovery>\n' +
         '        <D:supportedlock>\n' +
         '          <D:lockentry>\n' +
@@ -412,9 +412,9 @@ function webdav_propfind_response(url_path, req) {
         '            <D:locktype><D:write/></D:locktype>\n' +
         '          </D:lockentry>\n' +
         '        </D:supportedlock>\n';
-        
-    var response = 
-        //'  <D:response>\n' + 
+
+    var response =
+        //'  <D:response>\n' +
         '  <D:response xmlns:xt1="http://apache.org/dav/props/" xmlns:xt2="http://subversion.tigris.org/xmlns/dav/" xmlns:Z="urn:schemas-microsoft-com:">' +
         '    <D:href>'+href+'</D:href>\n' +
         '    <D:propstat>\n' +
@@ -422,9 +422,9 @@ function webdav_propfind_response(url_path, req) {
 
     if (coll) {
         var mime = "httpd/unix-directory";
-        response += 
+        response +=
             //'        <D:creationdate/>\n' +                                    // ISO 8601
-            '        <D:creationdate>'+crea+'</D:creationdate>\n' + 
+            '        <D:creationdate>'+crea+'</D:creationdate>\n' +
             //'        <D:displayname>'+name+'</D:displayname>\n' +              // Sounds ou temp-1687654484.tmp
             //'        <D:name>'+name+'</D:name>\n' +                            // Sounds ou temp-1687654484.tmp
             //'        <D:getcontentlength/>\n' +
@@ -437,11 +437,11 @@ function webdav_propfind_response(url_path, req) {
             //'        <D:isreadonly>TRUE</D:isreadonly>\n' +
             lock_stuff +
             '';
-            
+
     } else {
         var mime = path_to_mime(name);
-        response += 
-            '        <D:creationdate>'+crea+'</D:creationdate>\n' + 
+        response +=
+            '        <D:creationdate>'+crea+'</D:creationdate>\n' +
             '        <D:displayname>'+name+'</D:displayname>\n' +
             '        <D:name>'+name+'</D:name>\n' +
             '        <D:getcontentlength>'+size+'</D:getcontentlength>\n' +
@@ -456,12 +456,12 @@ function webdav_propfind_response(url_path, req) {
     }
     //console.log(href+"\n  "+name+"\n  "+crea+"\n  "+last+"\n  "+size+" "+mime);
 
-    response += 
+    response +=
         '      </D:prop>\n' +
         '      <D:status>HTTP/1.1 200 OK</D:status>\n' +
         '    </D:propstat>\n';
 
-    if (requested_fields) response += 
+    if (requested_fields) response +=
         '    <D:propstat>\n' +
         '      <D:prop>\n' +
         '        <D:isroot/>\n' +
@@ -486,14 +486,14 @@ function webdav_propfind_response(url_path, req) {
 
 function webdav_proppatch(req, res) {
     webdav_log_request(req);
-    
+
     res.writeHead(200, {});
     res.end();
 }
 
 function webdav_lock(req, res) {
     //webdav_log_request(req);
-    var reply_body = 
+    var reply_body =
         '<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n' +
         '<D:prop xmlns:D=\"DAV:\">\n' +
         '  <D:lockdiscovery>\n' +
@@ -542,22 +542,22 @@ function endsWith(str, suffix) {
 
 function webdav_init(cfg_args) {
     console.log("HTTP WebDav under Win7: \\\\localhost@"+cfg_args.http_port+"\\DavWWWRoot")
-    
+
     function webdav_handler(req, res, next) {
         var read_request = [ 'HEAD', 'GET', 'POST' ].indexOf(req.method)!==-1;
         var root_request = req.path.substr(1).split('/').length == 1;
-        if (!read_request || root_request) 
+        if (!read_request || root_request)
 		{
             var bAuth = auth.check_autorization(req, res);
             if (!bAuth) return;
         }
-        
+
         switch (req.method) {
             case 'HEAD':
             case 'GET':
             case 'POST':
                 return next();
-            
+
             case 'PUT':
                 console.log("webdav", req.method, req.path, req.body || "(no body)" );
                 return webdav_put(req, res);
@@ -572,7 +572,7 @@ function webdav_init(cfg_args) {
                 return webdav_copy(req, res);
             case 'DELETE':
                 return webdav_delete(req, res);
-            
+
             case 'PROPFIND':
                 return webdav_propfind(req, res);
             case 'PROPPATCH':
@@ -581,14 +581,14 @@ function webdav_init(cfg_args) {
                 return webdav_lock(req, res);
             case 'UNLOCK':
                 return webdav_unlock(req, res);
-            
+
             default:
                 // unexpected HTTP method
                 console.warn("webdav unexpected HTTP method", req.method, req.path);
                 next();
         }
     }
-    
+
     return webdav_handler;
 }
 
