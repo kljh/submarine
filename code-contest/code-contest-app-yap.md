@@ -17,6 +17,13 @@ Both prisoners are freed in case of success, otherwise they are sent again to th
 
 The prisoners are aware of the challenge in advance and they are given time to decide a strategy that maximize their chance to get out.
 
+# Submissions
+
+Your program is going to be called repeatedly by the [submission script](https://kljh.github.io/webapp/code-contest/code-contest-manual.html
+). 
+
+An example of the successive calls are shown below with sample input given to your program and sample output you're expected to produce.
+
 # Input-output data format (1st prisoner)
 
 ## Input data format
@@ -44,7 +51,7 @@ The prisoners are aware of the challenge in advance and they are given time to d
 In example below, the prisoner must find ball numbered 45. 
 
 ```
-# prisoner id (always 2 for first prisoner)
+# prisoner id (always 2 for second prisoner)
 2
 
 # ball to find
@@ -66,7 +73,7 @@ In example below, the prisoner must find ball numbered 45.
 The prisoner still looks for ball numbered 45. He opened drawer 17, it's a failed attempt since this drawer contained ball numbered 31. 
 
 ```
-# prisoner id (always 2 for first prisoner)
+# prisoner id (always 2 for second prisoner)
 2
 
 # ball to find
@@ -91,7 +98,7 @@ The prisoner still looks for ball numbered 45. He opened drawer 17, it's a faile
 The prisoner opened drawers 17 and 82, two failed attempt. Only 48 attempts left!!
 
 ```
-# prisoner id (always 2 for first prisoner)
+# prisoner id (always 2 for second prisoner)
 2
 
 # ball to find
