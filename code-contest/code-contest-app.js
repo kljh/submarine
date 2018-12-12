@@ -7,6 +7,9 @@ const crypto = require('crypto');
 const sqlite = require('../sqlite');
 const db = path.join(__dirname, ".code-contest/db.sqlite");
 const mandatory_uid = false;
+const bDebug = false;
+
+var attempt_state_by_uid_pid = {};
 
 module.exports = function(app) {
     console.log("Code Contest handler installed. "+db)
@@ -21,7 +24,7 @@ module.exports = function(app) {
         fs.mkdir(tmp_dir, err => {
             if (err)
                 return console.error("ERROR MKDIR: "+(err.stack||err));
-            
+
             Promise.resolve()
             //.then(_ => sqlite.sqlite_exec(db, "DROP TABLE IF EXISTS participants"))
             //.then(_ => sqlite.sqlite_exec(db, "DROP TABLE IF EXISTS submissions"))
@@ -49,8 +52,12 @@ function code_contest_register(req, res) {
 function code_contest_check_creds(req, res) {
     if (req.query.uid.indexOf("test")==0)
         return true;
-    
+
     //var users = await sqlite.sqlite_exec(db, "SELECT * FROM participants VALUES");
+
+    // no password
+    if (!mandatory_uid)
+		return true;
 
     res.status(401);
     res.send("ERROR: wrong user or password");
@@ -63,15 +70,15 @@ function code_contest_upload_source(req, res) {
 
 	var git;
 	try { git = require('nodegit'); } catch (e) { console.warn("require('nodegit'): "+(e.stack||e)); }
-	
+
 	var git_repo_path = path.join(__dirname, ".code-contest")
 	var full_path = path.join(git_repo_path, req.query.uid, req.query.pid, git?'':req.query.attempt.replace(/:/g,'_'), req.query.src);
 	var folder = path.join(full_path, '..');
 	mkdirsSync(folder);
-    
+
 	fs.writeFileSync(full_path, req.body);
 	if (git) {
-        git_commit(git_repo_path, [ path.posix.join(req.query.uid, req.query.pid, req.query.src.replace(/\\/g, "/")) ], 
+        git_commit(git_repo_path, [ path.posix.join(req.query.uid, req.query.pid, req.query.src.replace(/\\/g, "/")) ],
             { user: req.query.uid, email: req.query.email || "code@main2.fr", msg: req.query.msg })
         .then(function (git_commit_info) {
             res.send(""+git_commit_info);
@@ -91,18 +98,27 @@ function code_contest_get_input_data(req, res) {
     if (!code_contest_check_creds(req, res)) return;
 
     //console.log("code_contest_get_input_data", req.query, req.body);
+    require_reload_all_code_contest_app_xyz();
     var problem_handler = require("./code-contest-app-"+req.query.pid+".js");
-    
+
+    var attempt_states = attempt_state_by_uid_pid[req.query.uid+" - "+req.query.pid] || {};
+    var attempt_state = attempt_states[req.query.attempt] || {};
+    attempt_state_by_uid_pid[req.query.uid+" - "+req.query.pid] = {}; // clear (and replace)
+
     Promise.resolve()
     .then(_ => sqlite.sqlite_exec(db, "SELECT * from participants WHERE user_id = ? ",  [ req.query.uid,  ]))
     .then(users => { if (mandatory_uid && users.length<2) throw new Error("unknown user id '"+req.query.uid+"' (are you using user name ?)"); })
     .then(_ => sqlite.sqlite_exec(db, "CREATE TABLE IF NOT EXISTS submissions ( user_id, problem_id, attempt, timestamp, completed, result )"))
     .then(function (data) {
-        return sqlite.sqlite_exec(db, "SELECT DISTINCT timestamp, completed, result FROM submissions WHERE user_id=? and problem_id=? and attempt=? ", 
+        return sqlite.sqlite_exec(db, "SELECT DISTINCT timestamp, completed, result FROM submissions WHERE user_id=? and problem_id=? and attempt=? ",
 			[ req.query.uid, req.query.pid, req.query.attempt ]);
     })
     .then(function (previous_steps) {
-		return problem_handler.get_input_data(previous_steps);
+        var tmp = problem_handler.get_input_data(previous_steps, attempt_state);
+        
+        // replace the attempt state
+        attempt_state_by_uid_pid[req.query.uid+" - "+req.query.pid][req.query.attempt] = attempt_state;
+        return tmp;
     })
     .then(function (input_data) {
         if (input_data!==undefined) {
@@ -126,27 +142,37 @@ function code_contest_submit_output_data(req, res) {
     //console.log("code_contest_submit_output_data", req.query, req.body);
     var timestamp = (new Date()).toISOString();
     
+    require_reload_all_code_contest_app_xyz();
     var problem_handler = require("./code-contest-app-"+req.query.pid+".js");
     
+    var attempt_states = attempt_state_by_uid_pid[req.query.uid+" - "+req.query.pid] || {};
+    var attempt_state = attempt_states[req.query.attempt] || {};
+    attempt_state_by_uid_pid[req.query.uid+" - "+req.query.pid] = {}; // clear (and replace)
+
     Promise.resolve()
     .then(_ => sqlite.sqlite_exec(db, "SELECT * from participants WHERE user_id = ? ",  [ req.query.uid,  ]))
     .then(users => { if (mandatory_uid && users.length<2) throw new Error("unknown user id '"+req.query.uid+"' (are you using user name ?)"); })
-    .then(_ => sqlite.sqlite_exec(db, "SELECT DISTINCT timestamp, completed, result FROM submissions WHERE user_id=? and problem_id=? and attempt=? ", 
+    .then(_ => sqlite.sqlite_exec(db, "SELECT DISTINCT timestamp, completed, result FROM submissions WHERE user_id=? and problem_id=? and attempt=? ",
 		[ req.query.uid, req.query.pid, req.query.attempt ]))
     .then(function (previous_steps) {
-         return problem_handler.submit_output_data(req.body, previous_steps);   
+        var tmp = problem_handler.submit_output_data(req.body, previous_steps, attempt_state);
+
+        // replace the attempt state
+        attempt_state_by_uid_pid[req.query.uid+" - "+req.query.pid][req.query.attempt] = attempt_state;
+        return tmp;
     })
     .then(function (status) {
         // completion : 1 for fully completed, 0.5 for correct intermediate output, 0 for incorrect output
-        var completed = status.completed; 
+        var completed = status.completed;
+        if (typeof completed == "undefined") completed = 0.5;
         if (typeof completed == "boolean") completed = completed?1:0;
-
-        // result : a measure of the quality of the output (accuracy, optimality, complexity)
+        
+        // result used in the DB: a measure of the quality of the output (accuracy, optimality, complexity)
         var result = status.result;
 
-        // fields used by submission script: status.iterate, status.msg 
+        // fields used by submission script: status.iterate, status.msg
 
-        return sqlite.sqlite_exec(db, "INSERT INTO submissions VALUES ( ?, ?, ?, ?, ?, ? )", 
+        return sqlite.sqlite_exec(db, "INSERT INTO submissions VALUES ( ?, ?, ?, ?, ?, ? )",
             [ req.query.uid, req.query.pid, req.query.attempt, timestamp, completed, result ])
         .then(function (db_res) {
             res.send({ "completed": completed, "msg": status.msg, "iterate": status.iterate || false });
@@ -174,13 +200,13 @@ function git_commit(git_repo_path, src_files, prms) {
 	}
 
 	var git_promise = repo_promise
-	.then(repo_result => { 
-		repo = repo_result; 
+	.then(repo_result => {
+		repo = repo_result;
 		return repo.refreshIndex(); // .index() or .refreshIndex())
 	})
-	.then(index_result => { 
-		index = index_result; 
-		return index; 
+	.then(index_result => {
+		index = index_result;
+		return index;
 	})
 	.then(index => {
 		var add_promises = src_files.map(src_file => index.addByPath(src_file));
@@ -188,16 +214,16 @@ function git_commit(git_repo_path, src_files, prms) {
     })
 	.then(err_codes => {
 		var ok = err_codes.reduce((acc, val) => { return acc && !val; }, true);
-		if (!ok) { 
+		if (!ok) {
 			console.error("index.addByPath failed");
 			throw new Error("index.addByPath failed");
 		}
-		return index.write(); 
+		return index.write();
 	})
-	.then(err_code => { 
-		return index.writeTree(); 
+	.then(err_code => {
+		return index.writeTree();
 	})
-	.then(oid_result => { 
+	.then(oid_result => {
 		oid = oid_result;
 		return git.Reference.nameToId(repo, "HEAD");
 	})
@@ -206,19 +232,33 @@ function git_commit(git_repo_path, src_files, prms) {
 	})
 	.then(function(parent) {
 		var update_ref = "HEAD";
-		
+
 		var author = git.Signature.now(prms.user||"anonymous", prms.email||"unknown@null.com");
 		var committer = author;
-		
+
 		var message = prms.msg || "(no message)";
 		return repo.createCommit(update_ref, author, committer, message, oid, [ parent ]);
     })
 	.then(commit => {
-		console.log("commit", commit);
+		console.log("Git commit result", commit);
 		return commit;
 	});
 
     return git_promise;
+}
+
+function require_reload_module(module) {
+    var module_path = require.resolve(module); 
+    delete require.cache[module_path];
+}
+function require_reload_all(module_re) {
+    var modules = Object.keys(require.cache);
+    modules = modules.filter(m => m.match(module_re));
+    for (var module of modules) 
+        delete require.cache[module];
+}
+function require_reload_all_code_contest_app_xyz() {
+    if (bDebug) require_reload_all(/code-contest-app-../);
 }
 
 function mkdirsSync(folder) {
@@ -226,7 +266,7 @@ function mkdirsSync(folder) {
 		console.log('mkdirsSync', folder);
 		var parent_folder = path.join(folder, '..');
 	    mkdirsSync(parent_folder);
-		fs.mkdirSync(folder); 
+		fs.mkdirSync(folder);
     }
 }
 

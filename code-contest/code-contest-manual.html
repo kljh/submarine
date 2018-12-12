@@ -18,8 +18,13 @@ ul#xanim li {
 </head>
 <body>
 
-Link to the submission script: <a href="code-contest-submit.py">code-contest-submit.py</a> tested with Python 2.7 (should work with Python 3 too).<br/>
-Feel free to propose bug-fixes, improvements or implementations in other languages.
+<p>Link to the submission script: <a href="code-contest-submit.py">code-contest-submit.py</a> tested with Python 2.7 (should work with Python 3 too).<br/>
+Feel free to propose bug-fixes, improvements or implementations in other languages.</p>
+
+<p>Solution to the problem can be implemented in any language.<br/>
+- Input should be read from a file (passed as 1st argument on command line)<br/>
+- Output should be written to stdout<br/>
+</p>
 
 <p><b>Command line examples to submit solution to coding challenges <tt>pi</tt>, <tt>prime</tt> and <tt>scheduling</tt> (respectively coded with NodeJs, Python and a compiled language):</b>
 
@@ -34,6 +39,27 @@ python code-contest-submit.py --uid "team-ist-2017" --pid "scheduling" --cmd sch
 <img src="code-contest-submit.png" style="width: 100%;"><br/>
 Note: input files saved in <tt>.code-contest</tt> subfolder.
 </p>
+
+<p><b>Logic for scoring</b></p>
+
+<p>
+Two rules for ranking:
+<ol>
+<li>A team that iterates further on test input wins over a team that stops earlier.</li>
+<li>Between two team that reach the same test input, the team giving a solution the fastest or giving the most accurate solution win (depending on the type of problem).</li>
+</ol>
+</p>
+
+<p>
+Final score:
+<ol>
+<li>Each problem adds points to the final score. More points for better/faster submissions.</li>
+<li>A problem might be mandatory: you must complete it to be eligible for final ranking.</li>
+</ol>
+</p>
+        
+
+
 
 </body>
 </html>
