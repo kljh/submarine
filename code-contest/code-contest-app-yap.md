@@ -83,7 +83,7 @@ The prisoner still looks for ball numbered 45. He opened drawer 17, it's a faile
 1
 
 # previous attempts (if any): drawer opened and ball found within
-17 31
+17 93
 ```
 
 ## Output data format (2st iteration)
@@ -108,8 +108,8 @@ The prisoner opened drawers 17 and 82, two failed attempt. Only 48 attempts left
 2
 
 # previous attempts (if any): drawer opened and ball found within
-17 31
-82 60
+17 93
+82 22
 ```
 
 ## Output data format (3rd iteration)
