@@ -29,7 +29,7 @@ We will evaluate the strategy the following way:
 
 ## Constraints
 
-1 <= P <= N < 200 (? )
+1 <= P <= N < 500
 Timeout <= 86400
 
 ## Score
@@ -37,9 +37,19 @@ Timeout <= 86400
 For each output,
 If you have a valid strategy, your score is 86400-Time took by your strategy. Otherwise you will score 0.
 
-(Idea: Simple cases gives loads of points, but we should create some complex ones that will make better strategies score way more points than others)
- 
-P = 1 should be used for one case... But probably with a very large some of time required for all the tasks (for a very low score)
-P = N can be used for several cases... where we 
+## Sample Input Example
 
-(Of course evaluation needs to be smarter than what I described)
+```
+3 1 2
+10
+10
+20
+1 2
+2 3
+```
+
+## Sample Output Example
+
+```
+3 2 1
+```
