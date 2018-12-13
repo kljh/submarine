@@ -129,7 +129,7 @@ def get_input(args):
 
 def run_command(args, input_data_file):
 	cmd = args.cmd + [ input_data_file ]
-	#print("command to execute:", cmd)
+	#print("command to execute:", " ".join([ '"'+x+'"' for x in cmd ]))
 
 	#p =subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) # , encoding='utf-8'  Python 3.6 only
 	# bytes_in = input_data.encode('utf-8')
@@ -159,8 +159,11 @@ def submit_output(args, output_data):
 	try:
 		return r.json()
 	except Exception as e:
+		print("Evaluation Error on server:")
 		print(r.status_code, r.headers['content-type'], r.encoding)
 		print(r.text)
+		print("\nwhile uploading program's results:")
+		print(output_data)
 		raise e
 
 def print_progress_point():

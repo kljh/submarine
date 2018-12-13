@@ -7,7 +7,7 @@ function get_input_data(previous_steps, attempt_state) {
 	attempt_state.prices = random_walk(25 * 2<<(nb_iterations*2));
 
 	return "# Number of prices\n"
-		+ attempt_state.prices.length + "\n\n";
+		+ attempt_state.prices.length + "\n\n"
 		+ "# Prices of the day (possibly split on multiple lines)\n"
 		+ attempt_state.prices.join(" ") + "\n";
 }
@@ -18,33 +18,35 @@ function submit_output_data(output_data, previous_steps, attempt_state) {
 	var data = lines[0].split(" ").filter(x => x.trim()!="").map(x => x*1);
 	var i0 = data[0];
 	var i1 = data[1];
+	var diff = attempt_state.prices[i1] - attempt_state.prices[i0];
+	var msg = "your solution: i0="+i0+" i1="+i1+" diff="+diff;
 
 	if (i1<i0) {
 		return { completed: 0, result: 0, msg: "Constraint error: you must buy before selling.", iterate: false };
-
 	}
-	var sol = solution(attempt_state.prices)
-	var sol_i0 = sol[0];
-	var sol_i1 = sol[1];
 
-	var success = i0==sol_i0 && i1==sol_i1
+	var sol = solution(attempt_state.prices)
+	var i0 = sol[0];
+	var i1 = sol[1];
+	var best_diff = attempt_state.prices[i1] - attempt_state.prices[i0];
+	msg += ", best solution: i0="+i0+" i1="+i1+" diff="+best_diff;
+
+	var success = Math.abs(best_diff-diff)<1e-15
 	if (success) {
-		return { result: 1, msg: "Well Done", iterate: true };
+		return { result: 1, msg: "Well Done. "+msg, iterate: true };
 	} else {
-		msg = "your solution: i0="+i0+" i1="+i1+", "
-			+ "expected solution: i0="+sol_i0+" i1="+sol_i1;
-		return { completed: 0, result: 0, msg: msg, iterate: false };
+		return { completed: 0, result: 0, msg: "Not quite. "+msg, iterate: false };
 	}
 }
 
 function random_walk(n) {
 	var vec = new Array(n);
 	var val = 65.43;
-	var drift = 0.01;
+	var drift = -0.01;
 
     for (var i=0; i<n; i++) {
         vec[i] = val;
-        val = val + drift + Math.random()*2;
+        val = val + drift + (Math.random()*2-1.0);
     }
     return vec;
 }
@@ -53,17 +55,18 @@ function solution(vec) {
 	var i0=0, i1=0, diff=0.0;
 
 	var n = vec.length;
-	var min_so_far = vec[0];
 	var min_index = 0;
+	var min_so_far = vec[0];
 	for (var i=0; i<n; i++) {
 		if ((vec[i]-min_so_far)>diff) {
 			// improved PnL
-			diff = vec[i] - min_so_far;
 			i0 = min_index;
 			i1 = i;
+			diff = vec[i] - min_so_far;
 		}
 		if (vec[i]<min_so_far) {
 			// improved min
+			min_index = i;
 			min_so_far = vec[i]
 		}
 	}
@@ -87,6 +90,7 @@ function proposed_solution() {
 	var vec = input_data.shift().split(' ').map(val => val.trim()).filter(val => !!val).map(val => val*1);
 	var sol = solution(vec);
 	var [ i0, i1 ] = sol;
+	if (Math.random()<0.25) { i0=0; i1=1; }
 	console.log("# Buy time, sell time\n"+i0+" "+i1+"\n");
 
 }

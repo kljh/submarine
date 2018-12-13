@@ -1,23 +1,16 @@
-var numbers = [ 17, 42, 121, 1073, 12077, 120771 ];
 	
 function get_input_data(previous_steps) {
-	var n = numbers[previous_steps.length];
-	if (n===undefined) return;
+	var n = previous_steps.length;
 
-	var input_data = "# CALCULATE PRIME FACTORIZATION OF NUMBER BELOW.\n"
-		+ "# RESULT TO BE WRITTEN ON STDOUT, ON ONE LINE, AS A COMMA-SEPARATED LIST OF NUMBERS\n" + n;
+	throw new Error("to do");
+	var input_data = "#";
 	return input_data;
 }
 
 function submit_output_data(output_data, previous_steps) {
 	var lines = output_data.split("\n").filter(line => line!="" && line[0]!="#");
-	var factors_received = lines[0].split(",").map(x => x.trim()*1).sort();
-	var factors_expected = prime_factorisation(numbers[previous_steps.length]).sort();
-	var correct = JSON.stringify(factors_received)==JSON.stringify(factors_expected);
 
-	var completed = correct ? 0.5 : 0;
-	var msg = correct ? "well done" : "received "+factors_received+", expected "+factors_expected;
-	var result = correct ? 1 : -1;
+	throw new Error("to do");
 	return { completed: completed, result: result, msg: msg, iterate: true};
 }
 
