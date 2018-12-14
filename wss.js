@@ -45,7 +45,7 @@ try {
 // authenticates incoming requests through LDAP.
 var ldap_auth;
 //try {
-    ldap_auth = require('./ldap_auth');
+//    ldap_auth = require('./ldap_auth');
 //} catch(e) {}
 
 
@@ -60,7 +60,7 @@ Object.keys(ifaces).forEach(function (ifname) {
 });
 
 
-const http_port = process.env['PORT'] || 8085;
+const http_port = process.env['PORT'] || 8086;
 const wss_port = http_port;
 
 // Control maximum number of concurrent HTTP request
@@ -210,6 +210,9 @@ function whereami(req) {
 app.get('/whereami', function (req, res) {
     res.send(whereami(req));
 });
+app.get('/public/whereami', function (req, res) {
+    res.send(whereami(req));
+});
 
 app.get('/', function (req, res) {
     if (!req.session || !req.session.info)
@@ -290,7 +293,7 @@ function wss_on_connection(ws, req) {
 
     ws.on('message', function incoming(message) {
         console.log('msg from client: %s', message);
-        
+
         var msg;
         try { msg = JSON.parse(message); } catch(e) {}
         if (msg)
