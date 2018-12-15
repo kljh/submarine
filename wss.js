@@ -210,8 +210,13 @@ function whereami(req) {
 app.get('/whereami', function (req, res) {
     res.send(whereami(req));
 });
-app.get('/public/whereami', function (req, res) {
-    res.send(whereami(req));
+
+var peer_infos = {};
+app.get('/public/peers', function (req, res) {
+    var peer = req.query.id;
+    var info = req.headers["x-forwarded-for"] + ':' + req.headers["x-forwarded-port"];
+    peer_infos[peer] = info;
+    res.send(JSON.stringify(peer_infos));
 });
 
 app.get('/', function (req, res) {
