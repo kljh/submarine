@@ -1,4 +1,20 @@
 
+# Code Contest Coimbra
+
+Problem:
+- [Register allocation](code-contest-app-bday.md) (regstress)
+
+Results :
+
+| Team | #Test cases solved |
+| --- | --- |
+| shotless | 22 |
+| kljh | 14 |
+| pedro | 13 |
+| ajesus | 9 |
+| Los_Macholos_de_la_Programacion | 8 |
+| me | 8 |
+
 # Code Contest Porto
 
 Problems:
@@ -8,7 +24,28 @@ Problems:
 - [Yet another prisoner problem](code-contest-app-yap.md) (yap)
 - [A scheduling problem](code-contest-app-sched.md) (sched)
 
-Submission tool:
 
-- [submission doc](https://kljh.github.io/webapp/code-contest/code-contest-manual.html
-) 
+| Team | bday | struct | yap | sched |
+| --- | --- | --- | --- | --- |
+| Dino-Team | 16:10:42 | | 16:36:14 | TBC |
+| Global_Domination | 16:14:16 | 18:46:27 | 17:04:04 | TBC |
+| tennis | 16:22:50 | | | |
+| casa519 | 16:35:01 | | 18:33:13 (partial)| |
+| draginoi | 16:41:26 | | | TBC |
+| emm | 17:50:43 | | | TBC |
+
+- *Global_Domination* wins by the number of problems solved.
+- *Dino-Team* came with an interesting solution for the yap problem, systematically giving an answer right at the limit of the tolerence for the validation script.
+- *sched* problem results to be publish after verification (validation script failed)
+- Our apologies and a sincere thanks to the participant who experienced (and helped fixing) problems during the contest..
+
+# Submission tool:
+
+- [submission doc](https://kljh.github.io/webapp/code-contest/code-contest-manual.html)
+
+# Misc Links (ICPC, etc.):
+
+- [CodeForces](http://codeforces.com/problemset)
+- [UVA onlinejudge](https://uva.onlinejudge.org/)
+- [CloudFlare 2019 challenge](https://blog.cloudflare.com/christmas-cryptography-challenges-2019/)
+- [Battle of universities](https://battleofuniversities.com/#competition)

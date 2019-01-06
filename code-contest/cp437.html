@@ -1,0 +1,58 @@
+<html>
+<head>
+<style>
+.blue_text { color: rgb(0,0,255);  }
+.blue_back { background-color: rgb(0,0,255); }
+.grey_text { color: rgb(175,168,175);  }
+.grey_back { background-color: rgb(175,168,175); }
+.rosish_text { color: rgb(255,87,80);  }
+.rosish_back { background-color: rgb(255,87,80); }
+.yellowish_text { color: rgb(212,212,102);  }
+.yellowish_back { background-color: rgb(212,212,102); }
+.bluegreenish_text { color: rgb(0,168,175); }
+.bluegreenish_back { background-color: rgb(0,168,175); }
+</style>
+<script>
+var c = { 
+    double: { horizonal: '2550', vertical: '2551', topleft: '2554', topright: '2557', bottomleft: '255A', bottomright: '255d', plus: '256c', Ttop: '2566', Tbottom: '2569', Tleft: '2560', Tright: '2563' },
+    simple: { horizonal: '2500', vertical: '2502', topleft: '250c', topright: '2510', bottomleft: '2514', bottomright: '2518', plus: '253c', Ttop: '252C', Tbottom: '2534', Tleft: '251C', Tright: '2524' },   
+    simpleround: { topleft: '256d', topright: '256e', bottomleft: '256f', bottomright: '2570' }, 
+    dblspl: { plusH: '256A', plusV: '256B', Ttop: '2564', Tbottom: '2567', Tleft: '255F', Tright: '2562'}
+    // thik, 
+
+   }
+</script>
+</head>
+<body class="grey_text blue_back" style="width:100%; margin:0px;">
+<tt>
+<div class="bluegreenish_back yellowish_text" style="width:100%;">dnfdragora</div>
+&#x2554;&#x2550;&#x2566;&#x2550;&#x2564;&#x2550;&#x2557;<br/>
+&#x2551;abcde&#x2551;<br/>
+&#x2551;fghij&#x2551;<br/>
+&#x255F;<br/>
+&#x255A;<br/>
+<script>
+for (var k=5; k<6; k++) {
+document.write("<br/><br/>"+k+"<tt>");
+    
+for (var i=0; i<16; i++) {
+    document.write("<br/>"+i+"");
+    for (var j=0; j<16; j++) {
+        document.write("&#x2"+k.toString(16)+i.toString(16)+j.toString(16)+";")
+    }
+}
+}
+
+for (var t in c) {
+    for (var p in c[t]) {
+        document.write(t+"."+p+" &#x"+c[t][p]+";</br>");
+    }   
+}
+
+document.write("</tt>");
+
+</script>
+
+</tt>
+</body>
+</html>

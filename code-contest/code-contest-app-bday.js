@@ -15,6 +15,9 @@ function get_input_data(previous_steps, attempt_state) {
 function submit_output_data(output_data, previous_steps, attempt_state) {
 	// parse output of program
 	var lines = output_data.split("\n").filter(line => line!="" && line[0]!="#");
+	if (!lines.length)
+		return { completed: 0, result: 0, msg: "Empty reply received.", iterate: false };
+
 	var data = lines[0].split(" ").filter(x => x.trim()!="").map(x => x*1);
 	var i0 = data[0];
 	var i1 = data[1];

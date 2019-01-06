@@ -7,12 +7,13 @@ function get_input_data(previous_steps) {
 	return input_data;
 }
 
-function submit_output_data(output_data, previous_steps) {
+function submit_output_data(output_data, previous_steps, attempt_state, req) {
 	var iteration = previous_steps.length;
-	var input_data = test_input[iteration];
+	var input_data = test_input[iteration].split('\n').map(line => line.trim()).filter(line => line[0]!='#');
 	var problem = read_input_data(input_data);
 	var solution = read_strategy(output_data)
 	var score = evaluate(problem, solution);
+	var msg = "score "+score+" (bigger is better, -1 means error, we have problem with our scoring now)";
 
 	return { completed: 0.5, result: score, msg: msg, iterate: true};
 }
@@ -170,8 +171,11 @@ function evaluate(pb,strategy)
 	}
 
 	// forever loop
+	var foreverLoopCount = 0;
 	for(;;)
 	{
+		foreverLoopCount++;
+
 		uQ = updateQueue(queue,minIncrement,finishedJobs,jobs);
 		queue = uQ[0];
 		minIncrement = uQ[1];
@@ -202,8 +206,9 @@ function evaluate(pb,strategy)
 		if(allStall)
 		{
 			console.log("ERROR");
-			return 0;
-			break;
+			console.log("allStall. foreverLoopCount="+foreverLoopCount+" queue="+JSON.stringify(queue)+" strategies="+JSON.stringify(strategy))
+			//throw new Error("allStall. foreverLoopCount="+foreverLoopCount+" queue="+JSON.stringify(queue)+" strategies="+JSON.stringify(strategy))
+			return -1;
 		}
 
 

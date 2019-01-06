@@ -162,7 +162,6 @@ app.get('/logout', function (req, res) {
 
 //require("./github-oauth.js")(app);
 //require("./dropbox-oauth.js")(app);
-//require("./code-contest/code-contest-app.js")(app);
 
 function whoami(req) {
     if (!req.session || !req.session.info)

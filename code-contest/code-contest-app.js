@@ -11,7 +11,18 @@ const bDebug = false;
 
 var attempt_state_by_uid_pid = {};
 
-module.exports = function(app) {
+module.exports = register_app;
+
+function start_server() {
+    var http_port = 8080;
+    var app = express();
+    var server = http.createServer(app);
+    server.listen(http_port, function () { console.log('HTTP server started on port: %s', http_port); });
+
+    require(app);
+}
+
+function register_app(app) {
     console.log("Code Contest handler installed. "+db)
 
     app.use('/code-contest/register', code_contest_register);
@@ -115,7 +126,7 @@ function code_contest_get_input_data(req, res) {
     })
     .then(function (previous_steps) {
         var tmp = problem_handler.get_input_data(previous_steps, attempt_state);
-        
+
         // replace the attempt state
         attempt_state_by_uid_pid[req.query.uid+" - "+req.query.pid][req.query.attempt] = attempt_state;
         return tmp;
@@ -141,21 +152,25 @@ function code_contest_submit_output_data(req, res) {
 
     //console.log("code_contest_submit_output_data", req.query, req.body);
     var timestamp = (new Date()).toISOString();
-    
+
     require_reload_all_code_contest_app_xyz();
     var problem_handler = require("./code-contest-app-"+req.query.pid+".js");
-    
+
     var attempt_states = attempt_state_by_uid_pid[req.query.uid+" - "+req.query.pid] || {};
     var attempt_state = attempt_states[req.query.attempt] || {};
     attempt_state_by_uid_pid[req.query.uid+" - "+req.query.pid] = {}; // clear (and replace)
 
     Promise.resolve()
+    .then(_ => {
+        // add test output to source control (for reference, in case of contestation of auto-scoring values stored in SQLite DB)
+        // !!
+    })
     .then(_ => sqlite.sqlite_exec(db, "SELECT * from participants WHERE user_id = ? ",  [ req.query.uid,  ]))
     .then(users => { if (mandatory_uid && users.length<2) throw new Error("unknown user id '"+req.query.uid+"' (are you using user name ?)"); })
     .then(_ => sqlite.sqlite_exec(db, "SELECT DISTINCT timestamp, completed, result FROM submissions WHERE user_id=? and problem_id=? and attempt=? ",
-		[ req.query.uid, req.query.pid, req.query.attempt ]))
+        [ req.query.uid, req.query.pid, req.query.attempt ]))
     .then(function (previous_steps) {
-        var tmp = problem_handler.submit_output_data(req.body, previous_steps, attempt_state);
+        var tmp = problem_handler.submit_output_data(req.body, previous_steps, attempt_state, req);
 
         // replace the attempt state
         attempt_state_by_uid_pid[req.query.uid+" - "+req.query.pid][req.query.attempt] = attempt_state;
@@ -166,7 +181,7 @@ function code_contest_submit_output_data(req, res) {
         var completed = status.completed;
         if (typeof completed == "undefined") completed = 0.5;
         if (typeof completed == "boolean") completed = completed?1:0;
-        
+
         // result used in the DB: a measure of the quality of the output (accuracy, optimality, complexity)
         var result = status.result;
 
@@ -248,13 +263,13 @@ function git_commit(git_repo_path, src_files, prms) {
 }
 
 function require_reload_module(module) {
-    var module_path = require.resolve(module); 
+    var module_path = require.resolve(module);
     delete require.cache[module_path];
 }
 function require_reload_all(module_re) {
     var modules = Object.keys(require.cache);
     modules = modules.filter(m => m.match(module_re));
-    for (var module of modules) 
+    for (var module of modules)
         delete require.cache[module];
 }
 function require_reload_all_code_contest_app_xyz() {
@@ -277,3 +292,7 @@ function _git_commit_test() {
 	.catch(err => console.error("git_commit: "+(e.stack||e)));
 }
 //git_commit_test();
+
+if (typeof require != "undefined" && require.main === module) {
+    start_server();
+}

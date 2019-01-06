@@ -71,9 +71,9 @@ function submit_output_data(output_data, previous_steps, attempt_state) {
         // we're actually not enforcing the 50 attempts limit :-)
         // we're simply measuring how many attempts are used
 
-        if (success) { result = nb_attempts_so_far; msg = "well done"; };
-        if (almost) { result = nb_attempts_so_far; msg = "not quite"; };
-        if (failure) { completed = 0; result = 999; msg = "way to many attempts"; }
+        if (success) { result = nb_attempts_so_far; msg = "well done"; }
+        else if (almost) { result = nb_attempts_so_far; msg = "not quite"; }
+        else if (failure) { completed = 0; result = 999; msg = "way to many attempts"; }
 
         if (success || almost || failure) {
             delete attempt_state.ball_to_find;

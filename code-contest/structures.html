@@ -1,0 +1,110 @@
+
+
+<html>
+<head>
+<meta charset="utf-8"></meta>
+<script src="structures.js"></script>
+<script src="numerics_base.js"></script>
+<script src="numerics_ludcmp.js"></script>
+<style>
+</style>
+</head>
+<body>
+
+<h1>Problem</h1>
+
+<p>A truss structure  is made of either metal, wood or concrete elements (rod, beams or even cables if the element is in traction).
+The elements are connected together using revolute joints, that allow free rotation, hence they do not transmit any torque.
+</p>
+
+<p>This constructions guarantees that the elements are either purely in tractions or purely in compression, with no flexion whatsoever.
+<br/>This is a very useful mechanical property since few materials can offer strong flexion resistance.
+</p>
+
+<p>Examples : cranes, wide span roofs, bridges, electric pylons, Alex Moulton bicycle.
+<br/>
+<img style="height:300px;" src="http://www.jrlevage.com/wp-content/uploads/2013/05/machine-b.jpg">
+<img style="height:300px;" src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Ponte_P%C3%AAnsil_e_Lu%C3%ADs_I_c._1883._Em%C3%ADlio_Biel.JPG/1280px-Ponte_P%C3%AAnsil_e_Lu%C3%ADs_I_c._1883._Em%C3%ADlio_Biel.JPG">
+<img style="height:300px;" src="http://www.moultonbicycles.co.uk/images/models/Earl%20Grey_Lrg.jpg">
+</p>
+
+The problem:
+<ul>
+<li>Given the geometry of a structure : <b>vertices (joints)</b> and <b style="color:blue;">edges (mechanical elements)</b>, beams or cables, joining those vertices,
+<li>given how the structure is <b style="color:orange;">anchored to the ground</b> (resulting in forces for which we know the direction but not the intensity),
+<li>given anumber of <b style="color:red;">known load forces</b> (direction and intensity) applied to the structure,
+<li>calculate the force in each element of the structure (traction or compression) and the force in the anchors linking the structure to the ground.
+</ul>
+
+<p>Assumptions:
+<ul>
+<li>Weight of the structured is considered negligible compared to the external loads applied to it.
+<li>It results in simple equations : <em>forces at each joint must sum to zero</em>
+<li>The structure is supposed to be <em>isostatic</em>, e.g. there is a single solution.
+</ul>
+</p>
+
+
+<!--
+<svg id="svgEmbedId" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="400" >
+
+<title id="svgTitle">Triangle</title>
+<desc id="svgDesc">Elements remarquables du triangle (centre de gravite, orthocentre, cercles inscrits, circonscrits, exinscrits, ...). Animable.</desc>
+
+<defs id="defsId">
+	<symbol id="symbolIconPoint" overflow="visible" style="cursor:hand;">
+		<rect x="0" y="0" width="40" height="40" style="fill:rgb(240,240,240); stroke:rgb(220,220,220); stroke-width:1" />
+		<circle cx="20" cy="20" r="3" style="fill:darkblue; fill-opacity:0.8; stroke:rgb(0,0,0); stroke-width:.3" />
+	</symbol>
+</defs>
+<line id="scrollMarker" x1="0" y1="0" x2="200" y2="200" style="stroke:lightblue; stroke-width:8"></line>
+
+</svg>
+-->
+
+<p>An example:</p>
+<select id="select_node"></select><br/>
+<center>
+<svg id="graphsvg" style="width: 800; height: 400;">
+<defs id="defsId">
+	<!-- Force -->
+	<symbol id="symbolForce" overflow="visible">
+		<line x1="0.9" y1="0.05" x2="1.0" y2="0.0"/>
+		<line x1="0.9" y1="-.05" x2="1.0" y2="0.0"/>
+		<line x1="0.0" y1="0.00" x2="1.0" y2="0.0"/>
+	</symbol>
+	<marker id="arrow" markerWidth="10" markerHeight="10"
+		refX="0" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" />
+    </marker>
+</defs>
+<g id="graphsvg_cartesian">
+</g>
+</svg>
+</center>
+
+<p></p>
+
+<h1>Input data format</h1>
+<pre id="raw_data_in">
+</pre>
+
+<h1>Output data format</h1>
+<pre id="raw_data_out">
+</pre>
+
+</body>
+<script>
+build_select(wfs);
+
+var tmp = wireframe_test(wf);
+build_svg(wf, tmp);
+
+var raw_data_in = struct_to_text(wf);
+document.getElementById("raw_data_in").textContent = raw_data_in;
+
+var raw_data_out = forces_to_text(wf, tmp);
+document.getElementById("raw_data_out").textContent = raw_data_out;
+
+</script>
+</html>

@@ -12,33 +12,27 @@ from threading import Timer
 now = datetime.datetime.utcnow() #datetime.timezone.utc)
 attempt = "ATTEMPT-"+now.isoformat()
 
-def main():
+def read_args():
 
 	default_server = "" # "http://kljh.herokuapp.com/", "http://localhost:8086/"
 
 	parser = argparse.ArgumentParser(description='Code Contest.', epilog="Example: python "+sys.argv[0]+" --uid me --pid z --cmd z.exe --src z.c")
 	parser.register('type','bool',str2bool) # use type='bool' (with quotes), do not use type=bool (without quotes)
 
-	parser.add_argument('--srv', dest='srv', required=default_server=="", help='server URL', default=default_server ) 
+	parser.add_argument('--srv', dest='srv', required=default_server=="", help='server URL', default=default_server )
 	parser.add_argument('--uid', dest='uid', required=True, help='user ID' ) # , default="test")
 	parser.add_argument('--pwd', dest='pwd', required=False, help='user password', default="test")
 	parser.add_argument('--pid', dest='pid', required=True, help='problem ID' ) # , default="pi")
 	parser.add_argument('--cmd', dest='cmd', required=True, help='command line to execute', nargs='+' ) # , default=["node", "solution.js"])
 	parser.add_argument('--timeout', dest='timeout', help='timeout in seconds to execute command', default=10)
-	parser.add_argument('--src', dest='src', required=True, help='path to source code', nargs='+' )
-	parser.add_argument('--email', dest='email', help='email in Git', default=None )
-	parser.add_argument('--stdin',  dest='stdin', help='if set, input is sent to stdin. otherwise, the input file path is appended to the command line', type='bool', default=False )
-	parser.add_argument('--stdout', dest='stdout', help='if set, input is read from stdin. otherwise, the output file path is appended to the command line', type='bool', default=True )
+	parser.add_argument('--src', dest='src', required=True, help='path to source code (files or folders)', nargs='+' )
+	parser.add_argument('--email', dest='email', help='email to use in Git', default=None )
+	parser.add_argument('--stdin',  dest='stdin', help='if true (default), input is sent to stdin. otherwise, the input file path is appended to the command line', type='bool', default=True )
+	parser.add_argument('--stdout', dest='stdout', help='if true (default), input is read from stdin. otherwise, the output file path is appended to the command line', type='bool', default=True )
 	parser.add_argument('--msg', dest='msg', help='message in Git', default=None )
 	parser.add_argument('--verbose', dest='verbose', help='Show the commands being executed, etc..', type='bool', default=False )
 
 	args = parser.parse_args()
-	#print("command line args: ", args)
-
-	#if args.uid == None :
-	#	parser.print_help()
-	#	sys.exit(1)
-
 	# 0. send source
 	# 1. get test input, save to disk
 	# 2. run the command
@@ -49,24 +43,50 @@ def main():
 	print("Reading input from", "console (stdin)" if args.stdin else "file")
 	print("Writing output to", "console (stdout)" if args.stdout else "file")
 	print()
-	
-	check_per_file = [  os.path.exists(src) for src in args.src ]
+
+def upload_sources(srcs):
+	if srcs == None: return
+
+	check_per_file = [  os.path.exists(src) for src in srcs ]
 	check = reduce(lambda x, y: x and y, check_per_file)
 	if check!=True:
 		print("Path to source does not exist")
 		sys.exit(1)
 
-	print("Uploading src..")
+	# converting folders to files
+	src_files = []
+	for src in srcs:
+		if os.path.isdir(src):
+			folders = os.walk(src, topdown=True)
+			for dirpath, dirnames, filenames in folders:
+				while len(dirnames)>0 and dirnames[0][0]==".":
+					#print("ignoring", dirnames[0])
+					del dirnames[0]
+				#print("folder", dirpath)
+				for src_file in filenames:
+					if src_file[0]!=".":
+						src_files.append(os.path.join(dirpath[len(src)+1:], src_file))
+		else:
+			src_files.append(src)
+	srcs = src_files
+
+	print("Uploading src.. " + ("(%i files)" % len(srcs) if len(srcs) else "") )
 	headers = { "Content-Type": "application/octet-stream" }
-	for src in args.src:
+	for src in srcs:
+
 		with open(src, "rb") as fi:
 			src_bs = fi.read()
-			fi.close()
+		print("  "+src)
 		response = requests.post(args.srv+"code-contest/upload-source", data=src_bs, headers=headers,
 			params={ "uid": args.uid, "pid": args.pid, "attempt": attempt, "src": src, "email" : args.email})
 		print(args.srv+"code-contest/upload-source", src, response.status_code, response.text)
 		if response.status_code>299: sys.exit(1)
 	print("Upload complete.\n")
+
+def main():
+	args = read_args()
+
+	upload_sources(args.src)
 
 	iter = 0
 	while True:
@@ -133,27 +153,34 @@ def run_command(input_data, args, iter):
 	# write input data to file
 	with open(input_data_file, "wb") as f:
 		f.write(input_data.encode('utf-8'))
-	
+
 	cmd = args.cmd
 	if not args.stdin: cmd = cmd + [ input_data_file ]
 	if not args.stdout: cmd = cmd + [ output_data_file ]
-	if args.verbose: print("command:", " ".join([ '"'+x+'"' for x in cmd ]))
 
-	#p =subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) 
+	cmd_line = " ".join([ '"'+x+'"' for x in cmd ])
+	if args.verbose: print("command:", cmd_line)
+
+	#p =subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 	# bytes_out = p.communicate(input=bytes_in)[0]
 	# bytes_out = subprocess.check_output(cmd)
 
 	kill = lambda process: process.kill()
-	p = subprocess.Popen(cmd, 
+	p = subprocess.Popen(cmd,
 		stdin = subprocess.PIPE if args.stdin else None,
-		stdout = subprocess.PIPE if args.stdout else None, 
+		stdout = subprocess.PIPE if args.stdout else None,
 		stderr = subprocess.PIPE if args.stdout else None) # , encoding='utf-8'  Python 3.6 only
+
+	if p.returncode!=0:
+		print("Command:", cmd_line)
+		print("")
+		raise Exception("Exception with command.")
 
 	timer = Timer(args.timeout, kill, [p])
 	try:
 		timer.start()
 		bytes_in = input_data.encode('utf-8') if args.stdin else None
-		bytes_out = p.communicate(bytes_in)[0]  
+		bytes_out = p.communicate(bytes_in)[0]
 	finally:
 		timer.cancel()
 
@@ -163,7 +190,7 @@ def run_command(input_data, args, iter):
 		# read output data from file
 		with open(output_data_file, "rb") as f:
 			output_data = f.read(input_data).decode('utf-8')
-		
+
 	return output_data
 
 def submit_output(args, output_data):

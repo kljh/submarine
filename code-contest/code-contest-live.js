@@ -61,7 +61,7 @@ function live_ranksort(container_id, problem_id) {
 			stmt: sql
 			}))
 		.then(data => { 
-			//console.log("live_rank_data", problem_id, data);	
+			//console.log("live_rank_data", problem_id, sql, data);	
 			ranked_ids = data.map(x => x.user_id);
 			rank_scores = data.map(x => (problem_type=="speed") 
 				? new Date(excel_to_js_time(x.timestamp)).toISOString().substr(11, 8) 
@@ -181,17 +181,18 @@ function live_chart(container, problem_id) {
 
 	var prev_attempts = {};		
 	function requestLiveData() {
+		var sql = "select * from submissions "
+			+ " where problem_id='"+problem_id+"' "
+			+ " limit "+limit+" offset "+offset;
 		$.get("/sqlite_exec?" + $.param({
 				db: db, 
-				stmt: "select * from submissions "
-					+ " where problem_id='"+problem_id+"' "
-					+ " limit "+limit+" offset "+offset, 
+				stmt: sql, 
 				//args: [ problem_id ] 
 				}))
 		.then(data => { 
 			limit = 1;
 
-			//console.log("live_chart_data:", (new Date()).toISOString(), "new data:", data);
+			//console.log("live_chart_data:", (new Date()).toISOString(), sql, "new data:", data);
 			offset += data.length;
 
 			for (var x of data) {
