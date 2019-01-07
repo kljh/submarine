@@ -4,12 +4,19 @@ const url = require('url');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+
+const http = require('http');
+const express = require('express');
+const bodyParser = require('body-parser');
+
+const sqlite3 = require('sqlite3');
 const sqlite = require('../sqlite');
 const db = path.join(__dirname, ".code-contest/db.sqlite");
 const mandatory_uid = false;
-const bDebug = false;
+const bDebug = true;
+const git_repo_path = path.join(__dirname, ".code-contest");
 
-var attempt_state_by_uid_pid = {};
+var attempt_state_by_uid_pid = {};	
 
 module.exports = register_app;
 
@@ -19,7 +26,8 @@ function start_server() {
     var server = http.createServer(app);
     server.listen(http_port, function () { console.log('HTTP server started on port: %s', http_port); });
 
-    require(app);
+    app.use(bodyParser.text());
+    register_app(app);
 }
 
 function register_app(app) {
@@ -82,7 +90,6 @@ function code_contest_upload_source(req, res) {
 	var git;
 	try { git = require('nodegit'); } catch (e) { console.warn("require('nodegit'): "+(e.stack||e)); }
 
-	var git_repo_path = path.join(__dirname, ".code-contest")
 	var full_path = path.join(git_repo_path, req.query.uid, req.query.pid, git?'':req.query.attempt.replace(/:/g,'_'), req.query.src);
 	var folder = path.join(full_path, '..');
 	mkdirsSync(folder);
@@ -161,14 +168,21 @@ function code_contest_submit_output_data(req, res) {
     attempt_state_by_uid_pid[req.query.uid+" - "+req.query.pid] = {}; // clear (and replace)
 
     Promise.resolve()
-    .then(_ => {
-        // add test output to source control (for reference, in case of contestation of auto-scoring values stored in SQLite DB)
-        // !!
-    })
     .then(_ => sqlite.sqlite_exec(db, "SELECT * from participants WHERE user_id = ? ",  [ req.query.uid,  ]))
     .then(users => { if (mandatory_uid && users.length<2) throw new Error("unknown user id '"+req.query.uid+"' (are you using user name ?)"); })
     .then(_ => sqlite.sqlite_exec(db, "SELECT DISTINCT timestamp, completed, result FROM submissions WHERE user_id=? and problem_id=? and attempt=? ",
         [ req.query.uid, req.query.pid, req.query.attempt ]))
+    .then(async function(previous_steps) {
+        var nb_previous_steps = previous_steps.length;
+
+        // add test output to source control (for reference, in case of contestation of auto-scoring values stored in SQLite DB)
+        var output_data_path = path.join(git_repo_path, req.query.uid, req.query.pid, "out"+nb_previous_steps+".txt");
+        fs.writeFileSync(output_data_path, req.body);
+        var output_data_path = path.posix.join(req.query.uid, req.query.pid, "out"+nb_previous_steps+".txt");
+        git_commit(git_repo_path, [ output_data_path ],
+            { user: req.query.uid, email: req.query.email || "code@main2.fr", msg: req.query.msg });
+        return previous_steps;
+    })
     .then(function (previous_steps) {
         var tmp = problem_handler.submit_output_data(req.body, previous_steps, attempt_state, req);
 
@@ -232,7 +246,7 @@ function git_commit(git_repo_path, src_files, prms) {
 		if (!ok) {
 			console.error("index.addByPath failed");
 			throw new Error("index.addByPath failed");
-		}
+        }
 		return index.write();
 	})
 	.then(err_code => {
@@ -286,7 +300,6 @@ function mkdirsSync(folder) {
 }
 
 function _git_commit_test() {
-	var git_repo_path = path.join(__dirname, ".code-contest-test")
 	fs.writeFileSync(path.join(git_repo_path, "test.txt"), "a random number\n"+Math.random());
 	git_commit(git_repo_path, [ "test.txt" ], { user: "test", email: "test@null.com"})
 	.catch(err => console.error("git_commit: "+(e.stack||e)));

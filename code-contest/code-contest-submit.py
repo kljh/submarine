@@ -33,6 +33,7 @@ def read_args():
 	parser.add_argument('--verbose', dest='verbose', help='Show the commands being executed, etc..', type='bool', default=False )
 
 	args = parser.parse_args()
+
 	# 0. send source
 	# 1. get test input, save to disk
 	# 2. run the command
@@ -44,7 +45,9 @@ def read_args():
 	print("Writing output to", "console (stdout)" if args.stdout else "file")
 	print()
 
-def upload_sources(srcs):
+	return args
+
+def upload_sources(args, srcs):
 	if srcs == None: return
 
 	check_per_file = [  os.path.exists(src) for src in srcs ]
@@ -86,7 +89,7 @@ def upload_sources(srcs):
 def main():
 	args = read_args()
 
-	upload_sources(args.src)
+	upload_sources(args, args.src)
 
 	iter = 0
 	while True:
@@ -171,11 +174,6 @@ def run_command(input_data, args, iter):
 		stdout = subprocess.PIPE if args.stdout else None,
 		stderr = subprocess.PIPE if args.stdout else None) # , encoding='utf-8'  Python 3.6 only
 
-	if p.returncode!=0:
-		print("Command:", cmd_line)
-		print("")
-		raise Exception("Exception with command.")
-
 	timer = Timer(args.timeout, kill, [p])
 	try:
 		timer.start()
@@ -184,6 +182,12 @@ def run_command(input_data, args, iter):
 	finally:
 		timer.cancel()
 
+	if p.returncode!=0:
+		print("Command:", cmd_line)
+		print("return code:", p.returncode)
+		print("")
+		raise Exception("Exception with command.")
+	
 	if args.stdout:
 		output_data = bytes_out.decode('utf-8').replace('\r', '')
 	else:
