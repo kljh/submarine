@@ -1,6 +1,8 @@
 
 # Code Contest Coimbra
 
+June 8th, 2018
+
 Problem:
 - [Register allocation](code-contest-app-bday.md) (regstress)
 
@@ -16,6 +18,8 @@ Results :
 | me | 8 |
 
 # Code Contest Porto
+
+December 13th, 2018
 
 Problems:
 
