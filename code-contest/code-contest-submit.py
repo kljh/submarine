@@ -112,14 +112,14 @@ def main():
 		msg = result.get("msg", "")
 
 		if completed == False or completed == 0:
-			print("STATUS", iter, ": REJECTED", msg)
+			print("TEST SET", iter, ": REJECTED", msg)
 			sys.exit(1)
-		elif completed == True  or completed == 1:
-			print("STATUS", iter, ": COMPLETED", )
+		elif completed == True or completed == 1:
+			print("TEST SET", iter, ": COMPLETED", )
 			sys.exit(0)
 		else:
 			if msg != "":
-				print("STATUS", iter, ": RECORDED", msg)
+				print("TEST SET", iter, " ", msg)
 			else:
 				print_progress_point()
 		print("")

@@ -12,10 +12,8 @@ function submit_output_data(output_data, previous_steps, attempt_state, req) {
 	var input_data = test_input[iteration].split('\n').map(line => line.trim()).filter(line => line[0]!='#');
 	var problem = read_input_data(input_data);
 	var solution = read_strategy(output_data)
-	var score = evaluate(problem, solution);
-	var msg = "score "+score+" (bigger is better, -1 means error, we have problem with our scoring now)";
-
-	return { completed: 0.5, result: score, msg: msg, iterate: true};
+	var tmp = evaluate(problem, solution);
+	return { completed: 0.5, result: tmp.score, msg: tmp.msg, iterate: true};
 }
 
 
@@ -38,16 +36,16 @@ var test_input = test_input_files.map(file => fs.readFileSync(__dirname+'/sched/
 console.log("#test_input", test_input.length);
 
 class Job {
-	constructor(id,time)
+	constructor(id,duration)
 	{
 		this.id = id;
-		this.time = parseInt(time);
-		this.arr = [];
+		this.duration = parseInt(duration);
+		this.predecessors = [];
 	}
 
 	addDependency(dep_id)
 	{
-		this.arr.push(dep_id);
+		this.predecessors.push(dep_id);
 	}
 }
 
@@ -55,7 +53,7 @@ function read_input_data(input_data)
 {
 	var Steve = [];
 
-	console.log("# input: ",input_data)
+	//console.log("# input: ",input_data)
 
 	var spl = input_data[0].split(" ")
 	N = parseInt(spl[0])
@@ -80,7 +78,7 @@ function read_input_data(input_data)
 function read_strategy(input_data)
 {
 	input_data = input_data.split('\n').map(line => line.trim()).filter(line => line && line[0]!='#');
-	console.log("# strategy:" ,input_data)
+	//console.log("# strategy:" ,input_data)
 
 	var Threads = [];
 	var T = input_data.length;
@@ -97,20 +95,20 @@ function read_strategy(input_data)
 	return Threads;
 }
 
-function canRun(job,finishedJobs)
+function jobPendingDeps(job, finishedJobs)
 {
-	for(var i=0;i<job.arr.length;i++)
-		if(!finishedJobs[job.arr[i]-1])
-			return false;
+	for(var i=0;i<job.predecessors.length;i++)
+		if(!finishedJobs[job.predecessors[i]-1])
+			return job.predecessors[i];
 
-	return true;
+	return;
 }
 
-function isThreadFree(tId,queue)
+function isThreadFree(tId,running_tasks)
 {
-	for(var i=0;i<queue.length;i++)
+	for(var i=0; i<running_tasks.length; i++)
 	{
-		if(queue[i][2] == tId)
+		if(running_tasks[i].thread_id == tId)
 		{
 			return false;
 		}
@@ -127,25 +125,24 @@ function allDone(jobs)
 	return true;
 }
 
-function updateQueue(queue,minIncrement,finishedJobs,jobs)
+function getRunningTasks(running_tasks, currentTime, finishedJobs)
 {
-	var nq = []; //new queue
+	var nRT = []; //new running_tasks
 	var nInc = 86400; //new increment
 
-	for(var i=0;i<queue.length;i++)
+	for(var i=0;i<running_tasks.length;i++)
 	{
-		item = queue[i];
-		if(jobs[item[0]].time <= minIncrement)
-			finishedJobs[item[0]] = true;
+		item = running_tasks[i];
+		if(item.tend <= currentTime)
+			finishedJobs[item.jobidx] = true;
 		else
 		{
-			nq.push([item[0],item[1]-minIncrement,item[2]]);
-			if(item[1]-minIncrement < nInc)
-				nInc = item[1]-minIncrement;
+			nRT.push(item);
+			nInc = Math.min(nInc, item.tend-currentTime);
 		}
 	}
 
-	return [nq,nInc]
+	return { nRT, nInc };
 }
 
 function evaluate(pb,strategy)
@@ -157,65 +154,77 @@ function evaluate(pb,strategy)
 		throw new Error("more thread in the solution ("+strategy.length+") than available ("+T+")");
 	T = Math.min(T, strategy.length);
 
-	var finishedJobs = new Array(jobs.length);
-	var nextTimeStamp = new Array(jobs.length);
+	var finishedJobs = new Array(jobs.length).fill(false);
+	var nextTimeStamp = new Array(jobs.length).fill(0);
 	var currentTime = 0;
-	var queue = [];
+	var running_tasks = [];
 	var minIncrement = 86400;
 
-	//initialize
-	for(var i=0;i<jobs.length;i++)
-	{
-		nextTimeStamp[i] = 0;
-		finishedJobs[i] = false;
-	}
-
 	// forever loop
-	var foreverLoopCount = 0;
-	for(;;)
+	for (var foreverLoopCount = 0; ; foreverLoopCount++)
 	{
-		foreverLoopCount++;
-
-		uQ = updateQueue(queue,minIncrement,finishedJobs,jobs);
-		queue = uQ[0];
-		minIncrement = uQ[1];
+		var uQ = getRunningTasks(running_tasks, currentTime, finishedJobs);
+		running_tasks = uQ.nRT; // tasks currently running
+		minIncrement = uQ.nInc; // in how much time a next completing task ends
 
 		if(allDone(finishedJobs))
 		{
-			console.log("Time Spent: "+currentTime);
+			//console.log("Time Spent: "+currentTime);
 			break;
 		}
 
 		//At each current Time we check if we can already start the next job
-		allStall = true;
+		threads_starved = true;
 
+		var msg = "At time "+currentTime+":\n";
 		for(var i=0;i<T;i++)
 		{
-			console.log("# Check thread #",i)
-			if(isThreadFree(i,queue) && strategy[i].length && canRun(jobs[strategy[i][0]-1],finishedJobs))
-			{
-				console.log(strategy[i][0],"can run now")
-				allStall = false;
-				if(jobs[strategy[i][0]-1].time < minIncrement)
-					minIncrement = jobs[strategy[i][0]-1].time;
-				queue.push([strategy[i][0]-1,jobs[strategy[i][0]-1].time,i]); //jobId,Time,Thread
-				strategy[i].shift(); //we remove the first element of the list
+			//console.log("# Check thread #",i)
+			if(isThreadFree(i,running_tasks) && strategy[i].length) {
+				var deps = jobPendingDeps(jobs[strategy[i][0]-1], finishedJobs);
+				if (!deps) 
+				{
+					//console.log(strategy[i][0], "can run now on thread "+i)
+					threads_starved = false;
+					minIncrement = Math.min(minIncrement, jobs[strategy[i][0]-1].duration);
+					running_tasks.push({ 
+						jobidx: strategy[i][0]-1,
+						tstart: currentTime,
+						tend:   currentTime + jobs[strategy[i][0]-1].duration,
+						thread_id : i }); //jobId,Time,Thread
+
+					strategy[i].shift(); //we remove the first element of the list
+				} else {
+					msg += " - task "+strategy[i][0]+" can't run now on thread "+i+". Depends on task "+deps+".\n";
+					//console.log(strategy[i][0], "can't run now on thread "+i+". Depends on task "+deps+".");
+					//if (strategy[i][0]==52) debugger;
+				}
+			} else if (strategy[i].length) {
+				// move forward in time until all threads completed
+				threads_starved = false;
+				minIncrement = Math.min(minIncrement, jobs[strategy[i][0]-1].duration);
 			}
 		}
 
-		if(allStall)
+		var left_to_run = finishedJobs
+			.map((b,idx) => { return { finished: b, id: idx+1 }; })
+			.filter(job => !job.finished)
+			.map(job => job.id)
+			
+		if (threads_starved && running_tasks.length==0 && left_to_run.length>0)
 		{
+			msg += "Task not run: " + JSON.stringify(left_to_run) + "\n";
+			msg += "Threads_starved. No tasks either running or to run.\n";
+			msg += "Strategies (unused chunk): "+JSON.stringify(strategy)+"\n";
 			console.log("ERROR");
-			console.log("allStall. foreverLoopCount="+foreverLoopCount+" queue="+JSON.stringify(queue)+" strategies="+JSON.stringify(strategy))
-			//throw new Error("allStall. foreverLoopCount="+foreverLoopCount+" queue="+JSON.stringify(queue)+" strategies="+JSON.stringify(strategy))
-			return -1;
+			console.log(msg)
+			//throw new Error(msg)
+			return { score: -1, msg: msg };
 		}
 
-
-		// we update minIncrement at the end of the loop, otherwise bug xD
 		currentTime += minIncrement;
 	}
-	return 86400  - currentTime;
+	return { score: 86400  - currentTime, timeSpent: currentTime, msg: "" };
 }
 
 function proposed_solution() {
@@ -236,5 +245,7 @@ function proposed_solution() {
 	evaluate(Steve,Threads)
 }
 
-//if (process.argv.length>3)
-	proposed_solution();
+if (typeof require != "undefined" && require.main === module) {
+	//if (process.argv.length>3)
+		//proposed_solution();
+}
