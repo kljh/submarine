@@ -162,7 +162,7 @@ def run_command(input_data, args, iter):
 	if not args.stdout: cmd = cmd + [ output_data_file ]
 
 	cmd_line = " ".join([ '"'+x+'"' for x in cmd ])
-	if args.verbose: print("command:", cmd_line)
+	if args.verbose: print("command:", cmd_line, (" < "+input_data_file) if args.stdin else "")
 
 	#p =subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 	# bytes_out = p.communicate(input=bytes_in)[0]

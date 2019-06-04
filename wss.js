@@ -122,6 +122,8 @@ app.use("/login", function (req, res, next) {
 const session_handler = session({ secret: 'a new Tescent is born', store: redis_session_store });
 app.use(session_handler);
 
+require('./code-contest/code-contest-app.js')(app);
+
 // dynamic request
 app.post('/login', function (req, res) {
     req.session.info = req.session.info || {}
