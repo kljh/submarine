@@ -67,32 +67,3 @@ var test_output = test_input
 .map((f, i) => "case_"+(i+1)+".out")
 .map(x => fs.readFileSync(path.join(test_folder, x), encoding="latin1"));
 
-function proposed_solution() {
-	var input_data_file = process.argv[2];
-	var f = fs.openSync(input_data_file, 'r');
-	var input_data = fs.readFileSync(input_data_file,{ "encoding" : "utf-8" }).split('\n').filter(line => line[0]!='#');
-	console.log("# input_data", input_data)
-	var n = 1*input_data[0];
-	console.log("# n", n)
-
-	var factors = prime_factorisation(n)
-	console.log(factors.join(","));
-}
-
-function prime_factorisation(n) {
-	// The simplest method of finding factors is so-called "direct search factorization" (a.k.a. trial division). It is practical only for very small numbers.
-	// The fastest-known fully proven deterministic algorithm is the Pollard-Strassen method (Pomerance 1982; Hardy et al. 1990).
-	var factors = []
-	while (n%2==0) { factors.push(2); n /= 2; }
-
-	var m=Math.sqrt(n)+1;
-	for (var i=3; i<=m; i+=2) {
-		while (n%i==0) { factors.push(i); n /= i; }
-		if (n==1) break;
-	}
-	if (n!=1) factors.push(n);
-	return factors;
-}
-
-
-if (process.argv.length>2) proposed_solution();
