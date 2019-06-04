@@ -84,7 +84,7 @@ def upload_sources(args, srcs):
 			params={ "uid": args.uid, "pid": args.pid, "attempt": attempt, "src": src, "email" : args.email})
 		print(args.srv+"code-contest/upload-source", src, response.status_code, response.text)
 		if response.status_code>299: sys.exit(1)
-	print("Upload complete.\n")
+	print("Source code upload complete.\n")
 
 def main():
 	args = read_args()
@@ -183,11 +183,11 @@ def run_command(input_data, args, iter):
 		timer.cancel()
 
 	if p.returncode!=0:
-		print("Command:", cmd_line)
+		print("Command:", cmd_line, (" < "+input_data_file) if args.stdin else "")
 		print("return code:", p.returncode)
 		print("")
 		raise Exception("Exception with command.")
-	
+
 	if args.stdout:
 		output_data = bytes_out.decode('utf-8').replace('\r', '')
 	else:
@@ -208,8 +208,10 @@ def submit_output(args, output_data):
 		print("Evaluation Error on server:")
 		print(r.status_code, r.headers['content-type'], r.encoding)
 		print(r.text)
-		print("\nwhile uploading program's results:")
-		print(output_data)
+		#print("\nwhile uploading results:")
+		#print(output_data)
+		print("while uploading %i bytes." % len(output_data))
+		print("\n")
 		raise e
 
 def print_progress_point():

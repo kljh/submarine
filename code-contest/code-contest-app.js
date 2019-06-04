@@ -16,7 +16,7 @@ const mandatory_uid = false;
 const bDebug = true;
 const git_repo_path = path.join(__dirname, ".code-contest");
 
-var attempt_state_by_uid_pid = {};	
+var attempt_state_by_uid_pid = {};
 
 module.exports = register_app;
 
@@ -26,7 +26,7 @@ function start_server() {
     var server = http.createServer(app);
     server.listen(http_port, function () { console.log('HTTP server started on port: %s', http_port); });
 
-    app.use(bodyParser.text());
+    app.use(bodyParser.text({ limit: '10mb' }));
     register_app(app);
 }
 
