@@ -12,25 +12,35 @@ A script fetches test input, run your program on your machine against it and upl
 Submit a Python solution for problem `prime` :
 
 ```
-python code-contest-submit.py --uid "team-ensmp-2003" --pid "prime" --cmd python prime.py --src prime.py
-````
+python code-contest-submit.py --uid "team-ensmp-2003" --pid "prime"
+  --cmd python prime.py
+  --src prime.py
+```
 
-Submit a Node solution for problem `pi`:
+Submit a Node solution for problem `pi`, enabling verbose mode :
 
 ```
-python code-contest-submit.py --uid "team-coimbra-2017" --pid "pi" --cmd node pi.js --src pi.js
-````
+python code-contest-submit.py --uid "team-coimbra-2018" --pid "pi"
+  --cmd node pi.js
+  --src pi.js
+  --verbose true
+```
 
 Submit a C++ solution for problem `scheduling`, reading input from a file rather than stdin:
 
 ```
-python code-contest-submit.py --uid "team-porto-2018" --pid "scheduling" --cmd scheduling.exe --src makefile scheduling.cpp --stdin false
+python code-contest-submit.py --uid "team-porto-2018" --pid "scheduling"
+  --cmd scheduling.exe
+  --src makefile scheduling.cpp
+  --stdin false
 ```
 
-Submit a Go solution for problem `peakmem`, enabling verbose mode to display yhe command being executed:
+Submit a Go solution for problem `peakmem`, uploading a `src` folder:
 
 ```
-python code-contest-submit.py --uid "team-fcul-2019" --pid "peakmem" --cmd peakmem.exe --src makefile peakmem.go --verbose true
+python code-contest-submit.py --uid "team-fcul-2019" --pid "peakmem"
+  --cmd peakmem.exe
+  --src src
 ```
 
 Display help:

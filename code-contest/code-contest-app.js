@@ -27,6 +27,7 @@ function start_server() {
     server.listen(http_port, function () { console.log('HTTP server started on port: %s', http_port); });
 
     app.use(bodyParser.text({ limit: '10mb' }));
+    app.use(bodyParser.raw({ limit: '10mb' }));
     register_app(app);
 }
 

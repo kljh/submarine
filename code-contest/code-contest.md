@@ -1,4 +1,25 @@
 
+# Code Contest Coimbra
+
+FCUL, June 6th, 2019
+
+Problem:
+- Peak Memory Optimization
+- Football Team from Stats
+
+Results :
+
+| Team | peakmem | futebol |
+| --- | --- | --- |
+| nuno | 73.2% | 13/40 |
+| fabio | 62.9%  | 4/40 |
+| robin |  | 13/40 |
+| ndionisio |  | 1/40 |
+
+**peakmem**: score given is percentage of memory saving compared to naive solution.
+
+**futebol** : number of test cases solved with 100% accuracy.
+
 # Code Contest Porto
 
 FCUP, December 13th, 2018
@@ -26,8 +47,8 @@ Results :
 - **Global_Domination** wins by the number of problems solved and best result on *sched* problem.
 - **Dino-Team** came with an interesting solution for the yap problem, systematically giving an answer right at the limit of the tolerence for the validation script.
 - **EMM** has the second best score for the *sched* problem with the fastest algorithm.
-- *sched* problem results were publish after the event (validation script failed during competition). 
-  Values displayed are unit of time consumed for scheduling all test sets (less is best). 
+- *sched* problem results were publish after the event (validation script failed during competition).
+  Values displayed are unit of time consumed for scheduling all test sets (less is best).
 - Our apologies and a sincere thanks to the participant who experienced (and helped fixing) problems during the contest. We also learnt that competitors want to know exact scoring method in order to optimize their time allocation.
 
 # Code Contest Coimbra

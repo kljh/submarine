@@ -28,12 +28,12 @@ function submit_output_data(output_data, previous_steps) {
 	console.log("solution status", res)
 
 	if (res.error) {
-		var ret ={ completed: 0.5, msg: "Error validating solution", error: res.error, result: 1e8, iterate: true };
+		var ret ={ completed: 0.5, msg: "Error validating solution. " + res.error, result: 1e8, iterate: true };
 	} else {
 		var completed = 0.5;
 		var result = res.score;
 		var msg = "this solution uses "+Math.round(res.pct_of_max_footprint*100)+"% of resources needed by naive approach.";
-		var ret = { completed, msg, iterate: true};
+		var ret = { completed, msg, result, iterate: true};
 	}
 	console.log(ret);
 	return ret;
@@ -93,6 +93,8 @@ function parse_solution(txt) {
 
 	var rows = txt.split("\n");
 	var n = rows.shift()*1;
+	if (rows.length<n)
+		throw new Error("declaring "+n+"rows but actually only sending "+rows.length+" rows.")
 	for (var i=0; i<n; i++) {
 		var tmp = rows[i].split(/\s/).filter(x => x!='')
 		var execute = tmp.shift()*1

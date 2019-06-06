@@ -31,11 +31,11 @@ function submit_output_data(output_data, previous_steps) {
 	pct_correct = nb_correct / n;
 
 	var completed = 0.5;
-	var result = pct_correct<1.0 ? 0.0 : 1.0; // you need to get all correct answers to score 1
+	var result = nb_correct == n ? 1.0 : 0.0; // you need to get all correct answers to score 1
 	var msg = "correct answers: " + nb_correct + "/" + n;
 
 	console.log({ completed, msg, result, iterate: true});
-	return { completed, msg, iterate: true};
+	return { completed, msg, result, iterate: true};
 }
 
 
