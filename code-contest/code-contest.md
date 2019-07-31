@@ -1,11 +1,11 @@
 
-# Code Contest Coimbra
+# Code Contest Lisbon 2019
 
 FCUL, June 6th, 2019
 
 Problem:
-- Peak Memory Optimization
-- Football Team from Stats
+- [Peak Memory Optimization](code-contest-app-peakmem.md) (peakmem)
+- [Football Team from Stats](code-contest-app-futebol.md) (futebol)
 
 Results :
 
@@ -20,7 +20,7 @@ Results :
 
 **futebol** : number of test cases solved with 100% accuracy.
 
-# Code Contest Porto
+# Code Contest Porto 2018
 
 FCUP, December 13th, 2018
 
@@ -51,7 +51,7 @@ Results :
   Values displayed are unit of time consumed for scheduling all test sets (less is best).
 - Our apologies and a sincere thanks to the participant who experienced (and helped fixing) problems during the contest. We also learnt that competitors want to know exact scoring method in order to optimize their time allocation.
 
-# Code Contest Coimbra
+# Code Contest Coimbra 2018
 
 DEI/UC, June 8th, 2018
 
