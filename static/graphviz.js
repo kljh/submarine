@@ -32,7 +32,7 @@ jQuery(document).ready(function () {
   })
   $select.change(sel => {
   	console.log("Selected", sel.target.value);
-  	jQuery.get("/code-contest/peakmem/" + sel.target.value)
+  	jQuery.get("../code-contest/peakmem/" + sel.target.value)
        .then(reply => {
        	    InsertGraphvizText(reply);
        	    UpdateGraphviz();
