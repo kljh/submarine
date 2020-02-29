@@ -24,7 +24,7 @@ jQuery(document).ready(function () {
    
   var $select = jQuery('#graph_file');
   //jQuery.get("/ls?path=code-contest/peakmem")
-  jQuery.get("/code-contest/peakmem/ls.json")
+  jQuery.get("../code-contest/peakmem/ls.json")
   .then(reply => {
   	for (var x of reply.data)
   	    if (x.endsWith(".ditto"))
