@@ -19,6 +19,8 @@ const WebSocket = require('ws');
 const requestify = require('requestify');
 const child_process = require('child_process');
 
+const extras = false;
+
 // > redis-server --service-install redis.windows-service.conf
 var redis_client;
 var redis_session_store;
@@ -61,6 +63,7 @@ Object.keys(ifaces).forEach(function (ifname) {
 
 
 const http_port = process.env['PORT'] || 8086;
+const https_port = process.env['HTTPS_PORT'] || 8486;
 const wss_port = http_port;
 
 // Control maximum number of concurrent HTTP request
@@ -71,6 +74,16 @@ console.log('HTTP server starting ...');
 var app = express();
 var server = http.createServer(app);
 server.listen(http_port, function () { console.log('HTTP server started on port: %s', http_port); });
+
+// HTTPS self signed certificate (under Cygwin) :
+// openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout selfsigned.key -out selfsigned.crt
+if (extras) {
+	var privateKey  = fs.readFileSync('selfsigned.key', 'utf8');
+	var certificate = fs.readFileSync('selfsigned.crt', 'utf8');
+	var credentials = { key: privateKey, cert: certificate };
+	var httpsServer = https.createServer(credentials, app);
+	httpsServer.listen(https_port, function () { console.log('HTTPS server started on port: %s', https_port); });
+}
 
 app.set('trust proxy', true);
 
@@ -85,8 +98,9 @@ app.use(function(req, res, next) {
     next();
 }); */
 
-// webdav (and permissions)
-app.use(require('./webdav').webdav_init({ http_port: http_port }));
+// webdav (adds auth / permissions)
+if (extras)
+	app.use(require('./webdav').webdav_init({ http_port: http_port }));
 
 // static files
 console.log('HTTP server exposes static files...');
@@ -96,7 +110,15 @@ app.use('/', express.static(__dirname));
 // link to other projects
 app.use('/kljh', express.static(path.join(__dirname, '..\\kljh.github.io')));
 app.use('/grid', express.static(path.join(__dirname, '..\\grid')));
+app.use('/idefix', express.static(path.join(__dirname, '..\\idefix')));
 app.use('/mindthegap', express.static(path.join(__dirname, '..\\mindthegap')));
+
+app.use('/ls', function (req, res) {
+    var local_path = path.join(__dirname, req.query.path);
+    fs.readdir(local_path, function(err, data) {
+        res.send({ error: err, data: data });
+    })
+});
 
 // body parsers (results available in req.body)
 app.use(bodyParser.raw({ limit: '50mb', type: function(req) {
@@ -123,6 +145,8 @@ const session_handler = session({ secret: 'a new Tescent is born', store: redis_
 app.use(session_handler);
 
 require('./code-contest/code-contest-app.js')(app);
+if (extras)
+	require('../kljh.github.io/misc/quiz/quiz-app').register(app);
 
 // dynamic request
 app.post('/login', function (req, res) {

@@ -240,6 +240,8 @@ function test() {
 	var fs = require('fs')
 	var path = require('path')
 	var dir = "D:\\Builds\\FIRSTOPEN\\AlteryxToPython\\Alteryx\\bin\\RuntimeData\\Macros"
+	var dir = "peakmem";
+
 	var files = fs.readdirSync(dir)
 	files.forEach(function(file) {
 		if (file.split('.').pop()!="txt") return;
@@ -253,8 +255,33 @@ function test() {
 		var seq = parse_solution(txt);
 		//console.log("solution", seq)
 		var res = check_solution_nothrow(grph, seq);
+
+		render_solution_graph(filepath, grph, seq);
 		console.log(file, res)
 	});
+}
+
+function render_solution_graph(filepath, grph, seq) {
+	console.log(grph)
+	console.log(seq)
+	var txt = "";
+	var nbNodes = grph.footprints.length;
+
+	var max_size = grph.footprints.reduce((acc, val) => Math.max(acc, val), 1.0);
+
+	for (var i=0; i<nbNodes; i++) {
+		var size = 3 + Math.log(grph.footprints[i] / max_size);
+		txt += "  " + i + " [ label= \"#"+i+"\", width=\""+size+"\", height=\""+size+"\" ]\n";
+
+		var dest = i;
+		var sources = grph.sources[i]
+		for (var source of sources)
+			txt += "  " + dest + " -> " + source + "\n";
+	}
+
+	txt = "digraph G {\n" + txt + "}\n";
+
+	fs.writeFileSync(filepath+".ditto", txt, { encoding: "latin1" });
 }
 
 function proposed_solution() {
@@ -271,6 +298,7 @@ function proposed_solution() {
 
 if (require.main === module) {
 	if (process.argv.length>2) proposed_solution();
+	else test();
 } else {
 	console.log("#test_input", test_input.length);
 }

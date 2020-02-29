@@ -1,0 +1,35 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Webgraphviz</title>
+<style>
+</style>
+</head>
+<body>
+
+<p>
+<select id="graph_file">
+<option>Select graph</option>
+</select>
+
+<p>
+<textarea id="graphviz_data" rows="20" cols="80" width="100%" wrap="off">digraph G {
+  "Welcome" -&gt; "To"
+  "To" -&gt; "Web"
+  "To" -&gt; "GraphViz!"
+}
+</textarea>
+
+<p>
+<button id="generate_btn" style="font-size: 100%">Generate Graph!</button>
+
+<div id="graphviz_svg_div">
+</div>
+<br/>
+
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"> </script>
+<script src="viz.js"></script>
+<script src="graphviz.js"> </script>
+
+</body>
+</html>
