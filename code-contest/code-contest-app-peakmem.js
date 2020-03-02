@@ -1,4 +1,5 @@
 
+const peakmem2 = require('./code-contest-app-peakmem2.js');
 
 
 function get_input_data(previous_steps) {
@@ -71,6 +72,9 @@ function parse_problem(txt) {
 
 	var rows = txt.split("\n");
 	var n = rows.shift()*1;
+	for (var i=0; i<n; i++)
+		sinks[i] = [];
+
 	for (var i=0; i<n; i++) {
 		var tmp = rows[i].split(/\s/).filter(x => x!='')
 		var footprint = tmp.shift()*1
@@ -80,7 +84,6 @@ function parse_problem(txt) {
 		sources.push(args)
 		for (var j=0; j<args.length; j++) {
 			var a = args[j];
-			sinks[a] = sinks[a] || []
 			sinks[a].push(i);
 		}
 	}
@@ -166,6 +169,7 @@ function naive_solution(grph) {
 	return txt;
 }
 
+
 function check_solution_nothrow(grph, seq) {
 	try {
 		return check_solution(grph, seq);
@@ -192,8 +196,12 @@ function check_solution(grph, seq) {
 	for (var ix=0; ix<nb_execs; ix++) {
 		var idx = seq[ix].execute
 
+		// check node is not re-evaluated
+		if (executed[idx] || released[idx])
+			throw "Expression "+idx+" (at position "+ix+") can't be evaluated a second time.";
+
 		// check args have already been evaluated
-		var args = sources[idx]
+		var args = sources[idx];
 		for (var j=0; j<args.length; j++) {
 			var a = args[j];
 			if (!executed[a] || released[a])
@@ -233,7 +241,7 @@ function check_solution(grph, seq) {
 	var max_footprint = footprints.reduce((pv, cv) => pv + cv, 0);
 	var pct_of_max_footprint = peak_footprint / max_footprint;
 	var score = 1.0 - pct_of_max_footprint;
-	return { score, pct_of_max_footprint, peak_footprint, avg_nb_variables_in_use }
+	return { /* score, */ pct_of_max_footprint, peak_footprint, avg_nb_variables_in_use }
 }
 
 function test() {
@@ -242,28 +250,43 @@ function test() {
 	var dir = "D:\\Builds\\FIRSTOPEN\\AlteryxToPython\\Alteryx\\bin\\RuntimeData\\Macros"
 	var dir = "peakmem";
 
+	var solver_fcts = {
+		"naive_solution": naive_solution,
+		"depth_first_solution": peakmem2.depth_first_solution,
+		//"comprehensive_solution": comprehensive_solution,
+	};
+
 	var files = fs.readdirSync(dir)
 	files.forEach(function(file) {
 		if (file.split('.').pop()!="txt") return;
-		//console.log(file)
+		//if (!file.endsWith("Frequency_yxmc.txt")) return;
+
+		console.log(file)
 		var filepath = path.join(dir, file);
 		var txt = fs.readFileSync(filepath, { encoding: "latin1" })
 		var grph = parse_problem(txt);
 		//console.log("grph", grph)
-		var txt = naive_solution(grph)
-		//console.log("solution", txt)
-		var seq = parse_solution(txt);
-		//console.log("solution", seq)
-		var res = check_solution_nothrow(grph, seq);
 
+		for (var solver_name in solver_fcts) {
+			console.log(solver_name);
+			var solver_fct = solver_fcts[solver_name]
+
+			var txt = solver_fct(grph);
+			//console.log(txt, "\n")
+
+			var seq = parse_solution(txt);
+			//console.log("solution", seq)
+
+			var res = check_solution_nothrow(grph, seq);
+			console.log(res);
+		}
 		render_solution_graph(filepath, grph, seq);
-		console.log(file, res)
 	});
 }
 
 function render_solution_graph(filepath, grph, seq) {
-	console.log(grph)
-	console.log(seq)
+	//console.log(grph)
+	//console.log(seq)
 	var txt = "";
 	var nbNodes = grph.footprints.length;
 
