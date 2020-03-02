@@ -46,34 +46,39 @@ function depth_first_solution(grph) {
 	var nodes = grph.footprints.map((footprint, id) => { return { id, footprint, sources:  grph.sources[id], sinks:  grph.sinks[id] }; });
 	var nodes = add_node_metrics(nodes);
 	var root_ids = nodes.filter(x => x.sources.length==0).map(x => x.id);
+	var next_ids = root_ids;
 
 	var operations = []
 	var calculated_ids = new Set();
 
-	function recurse(root_ids) {
+	function calculate_node(id) {
+		var node = nodes[id];
+
+		if (calculated_ids.has(id))
+			return;
+		
+		// if required, calculate missing predecessors (merge node)
+		for (var p of node.sources)
+			if (!calculated_ids.has(p))
+				calculate_node(p);
+
+		// calculate node
+		//console.log(id, "calculated")
+		calculated_ids.add(id);
+
+		// free no longer needed parents
+		var freeable_ids = get_new_freeable_ids(node, nodes, calculated_ids);
+		operations.push(id + " " + freeable_ids.join(" "));
+
+		// push children (depth first)
 		// use metrics to improve improve root_ids ordering
-		for (var id of root_ids) {
-			var node = nodes[id];
-
-			if (calculated_ids.has(id))
-				continue;
-
-			if (is_calculable(node, calculated_ids)) {
-				// calculate node
-				//console.log(id, "calculated")
-				calculated_ids.add(id);
-				// free no longer needed parents
-				var freeable_ids = get_new_freeable_ids(node, nodes, calculated_ids);
-				operations.push(id + " " + freeable_ids.join(" "));
-				// go to children (depth first)
-				recurse(node.sinks);
-			} else {
-				//console.log(id, "not calculable yet")
-			}
-		}
+		node.sinks.forEach( id => next_ids.push(id) );
 	}
 
-	recurse(root_ids);
+	while (next_ids.length>0) {
+		var id = next_ids.pop();
+		calculate_node(id);
+	}
 
 	var solution = operations.length + "\n" + operations.join("\n");
 	return solution;

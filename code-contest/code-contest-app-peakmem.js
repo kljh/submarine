@@ -280,7 +280,9 @@ function test() {
 			var res = check_solution_nothrow(grph, seq);
 			console.log(res);
 		}
+
 		render_solution_graph(filepath, grph, seq);
+		console.log();
 	});
 }
 
