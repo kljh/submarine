@@ -37,8 +37,12 @@ export function register(app, clean_up_handlers: Array<() => Promise<any>>, opti
     
     async_get_method('/memo/keys', prms => keys(prms.pattern));
     async_get_method('/memo/lpush', prms => lpush(prms.key || prms.name || prms.id, prms.val || prms.value || prms.element));
-    async_get_method('/memo/lpop',  prms => lpop(prms.key, prms.count, prms.json=="true"));
+    async_get_method('/memo/lpop',  prms => lpop(prms.key, prms.json=="true"));
     async_get_method('/memo/lrange',  prms => lrange(prms.key, prms.start, prms.stop, prms.json=="true"));
+    async_get_method('/memo/sadd', prms => sadd(prms.key || prms.name || prms.id, prms.val || prms.value || prms.element));
+    async_get_method('/memo/spop',  prms => spop(prms.key, prms.json=="true"));
+    async_get_method('/memo/sismember',  prms => sismember(prms.key, prms.val || prms.value || prms.element));
+    async_get_method('/memo/smembers',  prms => smembers(prms.key, prms.json=="true"));
 
     load_state_from_aws_s3()
     .catch(err => console.log("[memo] Error with load_state_from_aws_s3", "\n", err, "\n"));
@@ -65,7 +69,7 @@ function upload_state_to_aws_s3() : Promise<any> {
     var json = JSON.stringify(memo);
     if (json.length < 5) {
         console.log(`[memo] Skip empty state #${memo}.`);
-        return;
+        return Promise.resolve("[memo] Skip empty state");
     }
     
     console.log(`[memo] State #${json.length}.`);
@@ -79,7 +83,7 @@ function load_text_from_aws_s3(key: string) : Promise<string> {
         // const bucket_list = await s3c.send(new aws3.ListBucketsCommand({}));
         // console.log("Success", bucket_list.Buckets);
         const get_res = await s3c.send(new aws3.GetObjectCommand({
-            Bucket: "kljh",
+            Bucket: "kljhapp",
             Key: key,
             // Range: "bytes=0-9" 
             }));
@@ -131,7 +135,7 @@ function upload_text_to_aws_s3(key: string, data: string) {
         // const bucket_list = await s3c.send(new aws3.ListBucketsCommand({}));
         // console.log("Success", bucket_list.Buckets);
         const put_res = await s3c.send(new aws3.PutObjectCommand({
-            Bucket: "kljh",
+            Bucket: "kljhapp",
             Key: key,
             Body: data,
             ACL: "public-read" }));
@@ -191,7 +195,7 @@ function lpush(key: string, val) : any {
     }
 }
 
-function lpop(key: string, count: number, bJsonParse: boolean = false) : any {
+function lpop(key: string, bJsonParse: boolean = false) : any {
 
     // pop from redis
     if (redis_client) {
@@ -241,7 +245,103 @@ function lrange(key: string, start: number = 0, stop: number = -1, bJsonParse: b
             return bJsonParse ? res.map(x => JSON.parse(x)) : res;
         }
     }
-
 }
 
+function sadd(key: string, val: string) : any {
 
+    // add from redis
+    if (redis_client) {
+        return new Promise(function (resolve, reject) {
+            redis_client.sadd(key, val, function (err, res) {
+                if (err)
+                    reject(err);
+                else 
+                    resolve(`[redis] sadd ${key} ${val} #${res}`);
+            });
+        });
+    }
+
+    else
+
+    // add from memory
+    {
+        return new Promise(function (resolve, reject) {
+            if (!(key in memo)) 
+                memo[key] = new Set();
+            memo[key].add(val);
+            resolve(`[memo] sadd ${key} ${val} #${memo[key].size}`);
+        });
+    }
+}
+
+function spop(key: string, bJsonParse: boolean = false) : any {
+
+    // pop from redis
+    if (redis_client) {
+        return new Promise(function (resolve, reject) {
+            redis_client.spop(key, function (err, res) {
+                if (err)
+                    reject(err);
+                else 
+                    resolve(bJsonParse ? JSON.parse(res) : res);
+            });
+        });
+    }
+
+    else 
+
+    // pop from memory
+    { 
+        throw new Error("[memo] spop not implemented");
+    }
+}
+
+function sismember(key: string, val: string) : any {
+    
+    // sismember from redis
+    if (redis_client) {
+        return new Promise(function (resolve, reject) {
+            redis_client.sismember(key, val, function (err, res) {
+                if (err)
+                    reject(err);
+                else 
+                    resolve(`${res}`);
+            });
+        });
+    }
+
+    else 
+
+    // sismember from memory
+    {
+        if (key in memo) {
+            var res = memo[key].has(val);
+            return `${res}`;
+        }
+    }
+}
+
+function smembers(key: string, bJsonParse: boolean = false) : any {
+    
+    // smembers from redis
+    if (redis_client) {
+        return new Promise(function (resolve, reject) {
+            redis_client.smembers(key, function (err, res) {
+                if (err)
+                    reject(err);
+                else 
+                    resolve(bJsonParse ? res.map(x => JSON.parse(x)) : res);
+            });
+        });
+    }
+
+    else 
+
+    // smembers from memory
+    {
+        if (key in memo) {
+            var res = memo[key].keys();
+            return bJsonParse ? res.map(x => JSON.parse(x)) : res;
+        }
+    }
+}
