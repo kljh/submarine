@@ -5,7 +5,7 @@ import { resolve } from "path";
 import { RedisClient } from "redis";
 
 // Credentials from 
-// 1. AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables
+// 1. AWS_REGION, AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables
 // 2. the files at ~/.aws/credentials and ~/.aws/config
 // See https://www.npmjs.com/package/@aws-sdk/credential-provider-node
 const s3c = new aws3.S3Client({}); // { region: "eu-west-3" });
@@ -37,8 +37,8 @@ export function register(app, clean_up_handlers: Array<() => Promise<any>>, opti
     
     async_get_method('/memo/keys', prms => keys(prms.pattern));
     async_get_method('/memo/lpush', prms => lpush(prms.key || prms.name || prms.id, prms.val || prms.value || prms.element));
-    async_get_method('/memo/lpop',  prms => lpop(prms.key, prms.count));
-    async_get_method('/memo/lrange',  prms => lrange(prms.key, prms.start, prms.stop));
+    async_get_method('/memo/lpop',  prms => lpop(prms.key, prms.count, prms.json=="true"));
+    async_get_method('/memo/lrange',  prms => lrange(prms.key, prms.start, prms.stop, prms.json=="true"));
 
     load_state_from_aws_s3()
     .catch(err => console.log("[memo] Error with load_state_from_aws_s3", "\n", err, "\n"));
@@ -191,7 +191,7 @@ function lpush(key: string, val) : any {
     }
 }
 
-function lpop(key: string, count: number) : any {
+function lpop(key: string, count: number, bJsonParse: boolean = false) : any {
 
     // pop from redis
     if (redis_client) {
@@ -200,7 +200,7 @@ function lpop(key: string, count: number) : any {
                 if (err)
                     reject(err);
                 else 
-                    resolve(res);
+                    resolve(bJsonParse ? JSON.parse(res) : res);
             });
         });
     }
@@ -208,13 +208,14 @@ function lpop(key: string, count: number) : any {
     else 
 
     // pop from memory
-    if (key in memo) 
-        return memo[key].pop();
-
+    if (key in memo) {
+        var res = memo[key].pop()
+        return bJsonParse ? JSON.parse(res) : res;
+    }
  
 }
 
-function lrange(key: string, start: number = 0, stop: number = -1) : any {
+function lrange(key: string, start: number = 0, stop: number = -1, bJsonParse: boolean = false) : any {
     
     // range from redis
     if (redis_client) {
@@ -223,7 +224,7 @@ function lrange(key: string, start: number = 0, stop: number = -1) : any {
                 if (err)
                     reject(err);
                 else 
-                    resolve(res);
+                    resolve(bJsonParse ? res.map(x => JSON.parse(x)) : res);
             });
         });
     }
@@ -236,9 +237,11 @@ function lrange(key: string, start: number = 0, stop: number = -1) : any {
             var n = memo[key].length;
             if (start < 0) start = n + start + 1;
             if (stop < 0) stop = n + stop + 1; else stop++; // 'stop' is inclusive to match redis conventions
-            return memo[key].slice(start, stop);
+            var res = memo[key].slice(start, stop);
+            return bJsonParse ? res.map(x => JSON.parse(x)) : res;
         }
     }
 
 }
+
 

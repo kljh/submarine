@@ -1,5 +1,7 @@
 'use strict';
 
+$(function () {
+
 $('.upload-btn').on('click', function (){
     $('#upload-input').click();
     $('.progress-bar').text('0%');
@@ -62,4 +64,6 @@ $('#upload-input').on('change', function(){
     });
 
   }
+});
+
 });

@@ -12,7 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.register = void 0;
 const aws3 = require("@aws-sdk/client-s3");
 // Credentials from 
-// 1. AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables
+// 1. AWS_REGION, AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables
 // 2. the files at ~/.aws/credentials and ~/.aws/config
 // See https://www.npmjs.com/package/@aws-sdk/credential-provider-node
 const s3c = new aws3.S3Client({}); // { region: "eu-west-3" });
@@ -21,7 +21,7 @@ let redis_client;
 // The in-memory state of the server (a mini memcache/redis/db for quick prototype without setting-up infrastructure)
 let memo = {};
 function register(app, clean_up_handlers, optional_redis_client) {
-    // redis_client = optional_redis_client;
+    redis_client = optional_redis_client;
     function async_get_method(path, fct) {
         app.get(path, function (req, res) {
             var prms = req.method == "GET" ? req.query : req.body;
@@ -45,8 +45,8 @@ function register(app, clean_up_handlers, optional_redis_client) {
     }
     async_get_method('/memo/keys', prms => keys(prms.pattern));
     async_get_method('/memo/lpush', prms => lpush(prms.key || prms.name || prms.id, prms.val || prms.value || prms.element));
-    async_get_method('/memo/lpop', prms => lpop(prms.key, prms.count));
-    async_get_method('/memo/lrange', prms => lrange(prms.key, prms.start, prms.stop));
+    async_get_method('/memo/lpop', prms => lpop(prms.key, prms.count, prms.json == "true"));
+    async_get_method('/memo/lrange', prms => lrange(prms.key, prms.start, prms.stop, prms.json == "true"));
     load_state_from_aws_s3()
         .catch(err => console.log("[memo] Error with load_state_from_aws_s3", "\n", err, "\n"));
     clean_up_handlers.push(function clean_up() {
@@ -180,7 +180,7 @@ function lpush(key, val) {
         });
     }
 }
-function lpop(key, count) {
+function lpop(key, count, bJsonParse = false) {
     // pop from redis
     if (redis_client) {
         return new Promise(function (resolve, reject) {
@@ -188,16 +188,18 @@ function lpop(key, count) {
                 if (err)
                     reject(err);
                 else
-                    resolve(res);
+                    resolve(bJsonParse ? JSON.parse(res) : res);
             });
         });
     }
     else 
     // pop from memory
-    if (key in memo)
-        return memo[key].pop();
+    if (key in memo) {
+        var res = memo[key].pop();
+        return bJsonParse ? JSON.parse(res) : res;
+    }
 }
-function lrange(key, start = 0, stop = -1) {
+function lrange(key, start = 0, stop = -1, bJsonParse = false) {
     // range from redis
     if (redis_client) {
         return new Promise(function (resolve, reject) {
@@ -205,7 +207,7 @@ function lrange(key, start = 0, stop = -1) {
                 if (err)
                     reject(err);
                 else
-                    resolve(res);
+                    resolve(bJsonParse ? res.map(x => JSON.parse(x)) : res);
             });
         });
     }
@@ -220,7 +222,8 @@ function lrange(key, start = 0, stop = -1) {
                 stop = n + stop + 1;
             else
                 stop++; // 'stop' is inclusive to match redis conventions
-            return memo[key].slice(start, stop);
+            var res = memo[key].slice(start, stop);
+            return bJsonParse ? res.map(x => JSON.parse(x)) : res;
         }
     }
 }
