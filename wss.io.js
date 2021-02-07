@@ -145,11 +145,3 @@ function remove_topic_subscriber(topic, ws) {
         broadcast_on_topic(topic, notif_msg, ws);
     }
 }
-
-function disp_obj(n, o) {
-    console.log("\n\n--- "+n+" ---");
-    for (var k in o)
-    if (k[0]!='_' && typeof o[k] != 'function')
-        console.log(k+': '+o[k]);
-    console.log("\n");
-}

@@ -13,7 +13,6 @@ const url = require('url');
 const express = require('express');
 const session = require('express-session')
 const bodyParser = require('body-parser');
-const formidable = require('formidable');
 const WebSocket = require('ws');
 
 const requestify = require('requestify');
@@ -74,6 +73,37 @@ console.log('HTTP server starting ...');
 var app = express();
 var server = http.createServer(app);
 server.listen(http_port, function () { console.log('HTTP server started on port: %s', http_port); });
+
+process.on('SIGTERM', clean_up_and_exit);
+process.on('SIGINT', clean_up_and_exit);
+process.on('SIGQUIT', clean_up_and_exit);
+// process.on('SIGHUP', clean_up_and_exit);   // not a termination request 
+// process.on('SIGKILL', clean_up_and_exit);  // forced termination
+
+var clean_up_handlers = [];
+
+function clean_up_and_exit(e) {
+    console.log("Termination signal received. Clean-up.. ", e);
+    
+    var clean_up_promises = clean_up_handlers.map( f => f() );
+    var clean_up_promise = Promise
+        // .all(clean_up_promises)  // wait for all or stop with first caught !!
+        .allSettled(clean_up_promises)  // wait for all 
+        .then(promises => { console.log(promises); return Promise.all(promises); })  // reduce to one
+        .catch(err => console.log("Clean-up with error."))
+        .then(_ => { console.log("Done."); process.exit(0); });
+}
+
+clean_up_handlers.push(function app_clean_up_handler() {
+    return new Promise((resolve, reject) => {
+        console.log('[http] Closing server...');
+        server.close(function () {
+            console.log('[http] Server closed');
+            resolve('[http] ok');
+        });
+    })
+});
+
 
 // HTTPS self signed certificate (under Cygwin) :
 // openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout selfsigned.key -out selfsigned.crt
@@ -144,7 +174,10 @@ app.use("/login", function (req, res, next) {
 const session_handler = session({ secret: 'a new Tescent is born', store: redis_session_store });
 app.use(session_handler);
 
-require('./code-contest/code-contest-app.js')(app);
+// require('./code-contest/code-contest-app.js')(app);
+require('./dist/uploads').register(app);
+require('./dist/memo').register(app, clean_up_handlers, redis_client);
+
 if (extras)
 	require('../kljh.github.io/misc/quiz/quiz-app').register(app);
 
@@ -251,51 +284,6 @@ app.get('/', function (req, res) {
         res.redirect('/static/chat.html');
 });
 
-fs.mkdir(path.join(__dirname, 'uploads'), function() {});
-app.use('/upload', function(req, res) {
-    var me = whoami(req);
-    if (!me||!me.name) return res.sendStatus(403);
-
-    var httpd_path = '/uploads/' + req.query.path;
-    var local_path = path.join(__dirname, 'uploads', req.query.path);
-
-    var content_type = req.headers["content-type"];
-    if (content_type=="application/octet-stream") {
-        fs.writeFile(local_path, req.body, function(err) {
-            res.send({ error: err, url: httpd_path });
-        })
-        return;
-    }
-
-    // "multipart/form-data; boundary=----WebKitFormBoundary..."
-    var form = new formidable.IncomingForm();
-    form.uploadDir = path.join(__dirname, 'uploads'); // store directory
-    form.multiples = true; // allow multiple files in a single request
-
-    // every time a file has been uploaded successfully,  rename it to it's orignal name
-    form.on('file', function(field, file) {
-        fs.rename(file.path, path.join(form.uploadDir, file.name), err => {});
-    });
-
-    form.on('error', function(err) {
-        try {
-            res.send({ error: err, error_message: err.message, error_stack: err.stack, error_context: 'form upload eror' });
-        } catch(e) {
-            res.send({ error: 'form upload eror\n' + err });
-        }
-    });
-
-    form.on('end', function() {
-        res.send('upload success');
-    });
-
-    // parse the incoming request containing the form data
-    form.parse(req);
-});
-app.get('/uploads/:filename', function(req, res) {
-    //res.send(req.params.filename);
-    res.sendFile(path.join(__dirname, 'uploads', req.params.filename));
-});
 
 //const sqlite_app = require('./sqlite.js').sqlite_install(app);
 //const rscript_app = require('./rscript.js').install(app); // uses async/await
@@ -315,7 +303,7 @@ function wss_on_connection(ws, req) {
     ws.send(JSON.stringify({ type: "greeting_msg", txt: "Greeting "+remote_auth+" from Websocket server...\n"
         + "Session info not yet loaded: " + JSON.stringify(whoami(req)) }));
 
-    // force retriving session info from cookie
+    // force retrieving session info from cookie
     session_handler(req, {}, function() {
         ws.send(JSON.stringify({ type: "greeting_msg", txt: "Greeting "+remote_auth+" from Websocket server...\n"
             + "Session  loaded: " + JSON.stringify(whoami(req)) }));
@@ -378,33 +366,6 @@ function wss_on_connection(ws, req) {
                 }
                 break;
 
-            case "http_request":
-                var http_url = msg.url;
-                // Let people use pre-registered HTTP aliases
-                var http_alias = msg.http_alias;
-                if (http_alias && cfg && cfg.http) {
-                    http_url = cfg.http[http_alias].url;
-                }
-
-                if (!http_url) return ws.send(JSON.stringify({ type: msg.type, error: "missing HTTP url or alias" }));
-                var http_method = msg.method || (msg.body ? "POST" : "GET" );
-                var http_callback = function(res) {
-                    if (res.errno)
-                         return ws.send(JSON.stringify({ type: msg.type, url: http_url, error: res }));
-
-                    var status = res.getCode();
-                    var headers = res.getHeaders();
-                    var reply_body = res.getBody();
-                    if (ws.readyState === WebSocket.OPEN)
-                        return ws.send(JSON.stringify({ type: msg.type, status: status, res: reply_body }));
-                };
-
-                if (http_method=="GET")
-                    requestify.get(http_url).then(http_callback).fail(http_callback);
-                else
-                    requestify.post(http_url, msg.body).then(http_callback).fail(http_callback);
-
-                break;
             case "rexec":
                 // Do NOT let people simply input arbitrary exe path, use pre-registered commands instead.
                 var rexec_cmd = msg.rexec_cmd;
@@ -501,12 +462,4 @@ function remove_topic_subscriber(topic, ws) {
         var notif_msg = { type: "subscriber_left", topic: topic, nb_subscribers: nb_subscribers, id: removed_subscriber_info.id };
         broadcast_on_topic(topic, notif_msg, ws);
     }
-}
-
-function disp_obj(n, o) {
-    console.log("\n\n--- "+n+" ---");
-    for (var k in o)
-    if (k[0]!='_' && typeof o[k] != 'function')
-        console.log(k+': '+o[k]);
-    console.log("\n");
 }
