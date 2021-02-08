@@ -18,12 +18,14 @@ $(function() {
         var wdetails2 = `Rise ${sunrise} Set ${sunset} <br/>`;
         var wdetails3 = `${data.main.pressure} hPa - ${data.main.humidity}% <br/>`;
         var wdetails4 = `${data.weather[0].description}<br/>`;
-        var wdetails5 = `Wind ${data.wind.speed} knt <br/>`;
+        var wdetails5 = `Wind ${(data.wind.speed * 1.94).toFixed(2)} knt<br/>`;
         $('#wtemp').text(wtemp);
         $('#wdetails').html(`<span style="font-size: 14px;"> ${wdetails1} ${wdetails2} </span>`);
 
         var iconurl = "https://openweathermap.org/img/w/" + data.weather[0].icon + ".png";
+        var windir = `<div style="display: inline-block; transform: rotate(${data.wind.deg + 180}deg);">^</div>`;
         $('#wicon').attr('src', iconurl);
+        $('#windir').html(windir);
         $('#wdesc').html(`<span style="font-size: 14px;"> ${wdetails5} ${wdetails3} </span>`);
 
         var lat = `${Math.abs(data.coord.lat).toFixed(2)}${data.coord.lat>0?" N":" S"}`;
@@ -32,9 +34,10 @@ $(function() {
         $('#wloc').html(wloc);
     });
 
-    $.get("https://kljh.herokuapp.com/memo/lrange?key=temp&start=-2200&stop=-1&json=true")
+    // new values are lpushed, so history is in reverse order
+    $.get("https://kljh.herokuapp.com/memo/lrange?key=temp&start=0&stop=10080&json=true")
     .then(data => {
-        var last = data[0]; // new values are lpushed, so history is in reverse order
+        var last = data[0];
         console.log(last);
         
         var t = new Date(last.timestamp)
