@@ -34,7 +34,7 @@ $(function() {
 
     $.get("https://kljh.herokuapp.com/memo/lrange?key=temp&start=-2200&stop=-1&json=true")
     .then(data => {
-        var last = data.pop();
+        var last = data[0]; // new values are lpushed, so history is in reverse order
         console.log(last);
         
         var t = new Date(last.timestamp)
